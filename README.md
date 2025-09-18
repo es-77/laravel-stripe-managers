@@ -2,68 +2,39 @@
 
 A comprehensive Laravel package for managing Stripe customers, products, subscriptions, and payments with a complete web interface.
 
-## Features
+## 🚀 Quick Start
 
-- ✅ **Customer Management**: Create, update, and manage Stripe customers
-- ✅ **Card Storage**: Store and manage customer payment methods locally
-- ✅ **Product Management**: Create and manage Stripe products with multiple pricing tiers
-- ✅ **Pricing Management**: Assign and manage product pricing with recurring/one-time options
-- ✅ **Subscription Management**: Create, update, cancel, and resume subscriptions
-- ✅ **Webhook Handler**: Handle Stripe webhooks for payment received/cancelled events
-- ✅ **Web Interface**: Complete UI for managing all Stripe resources
-- ✅ **Payment Tracking**: Store and track subscription payments locally
+### Installation
 
-## Installation
-
-
-1. **Install via Composer** (if published):
+1. **Install the package via Composer:**
 ```bash
 composer require emmanuelsaleem/laravel-stripe-manager
 ```
 
-2. **Or add to your project manually**:
-Copy the package to your `packages/emmanuelsaleem/laravel-stripe-manager` directory.
-
-3. **Add to composer.json** (for local development):
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "./packages/emmanuelsaleem/laravel-stripe-manager"
-        }
-    ],
-    "require": {
-        "emmanuelsaleem/laravel-stripe-manager": "*"
-    }
-}
-```
-
-4. **Install dependencies**:
+2. **Install required dependencies:**
 ```bash
 composer require laravel/cashier stripe/stripe-php
 ```
 
-5. **Publish configuration**:
+3. **Publish configuration:**
 ```bash
 php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="config"
 ```
 
-6. **Publish and run migrations**:
+4. **Publish and run migrations:**
 ```bash
 php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="migrations"
 php artisan migrate
 ```
 
-7. **Publish views** (optional):
+5. **Publish views (optional):**
 ```bash
 php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="views"
 ```
 
-## Configuration
+### Configuration
 
-Add your Stripe credentials to `.env`:
-
+1. **Add Stripe credentials to your `.env` file:**
 ```env
 STRIPE_KEY=pk_test_your_publishable_key
 STRIPE_SECRET=sk_test_your_secret_key
@@ -71,44 +42,50 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 CASHIER_CURRENCY=usd
 ```
 
-Update `config/stripe-manager.php`:
-
+2. **Update your User model to use Cashier:**
 ```php
-return [
-    'stripe' => [
-        'model' => App\Models\User::class,
-        'key' => env('STRIPE_KEY'),
-        'secret' => env('STRIPE_SECRET'),
-        'webhook' => [
-            'secret' => env('STRIPE_WEBHOOK_SECRET'),
-            'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
-        ],
-    ],
-    
-    'currency' => env('CASHIER_CURRENCY', 'usd'),
-    'trial_days' => 14,
-    
-    'routes' => [
-        'prefix' => 'stripe-manager',
-        'middleware' => ['web', 'auth'],
-    ]
-];
+// In your User model
+use Laravel\Cashier\Billable;
+
+class User extends Authenticatable
+{
+    use Billable;
+}
 ```
 
-## Usage
+## 🌐 Web Interface Access
 
-### Accessing the Web Interface
+Once installed, you can access the complete web interface at:
 
-Visit `/stripe-manager` to access the complete web interface for managing:
-- Customers
-- Products
-- Subscriptions
-- Payments
+### Main Dashboard
+```
+http://yourdomain.com/stripe-manager
+```
 
-### Using Services Programmatically
+### Available Routes
+- **Dashboard**: `/stripe-manager` - Overview with statistics
+- **Products**: `/stripe-manager/products` - Manage products and pricing
+- **Customers**: `/stripe-manager/customers` - Manage customers and payment methods
+- **Subscriptions**: `/stripe-manager/subscriptions` - Manage subscriptions
+- **Webhooks**: `/stripe-manager/webhooks` - Webhook management and logs
 
-#### Customer Service
+### Authentication Required
+All routes require authentication. Make sure users are logged in before accessing the interface.
 
+## 📋 Features
+
+- ✅ **Customer Management**: Create, update, and manage Stripe customers
+- ✅ **Card Storage**: Store and manage customer payment methods locally
+- ✅ **Product Management**: Create and manage Stripe products with multiple pricing tiers
+- ✅ **Pricing Management**: Assign and manage product pricing with recurring/one-time options
+- ✅ **Subscription Management**: Create, update, cancel, and resume subscriptions
+- ✅ **Webhook Handler**: Handle Stripe webhooks for payment events
+- ✅ **Web Interface**: Complete UI for managing all Stripe resources
+- ✅ **Payment Tracking**: Store and track subscription payments locally
+
+## 💻 Programmatic Usage
+
+### Customer Service
 ```php
 use EmmanuelSaleem\LaravelStripeManager\Services\CustomerService;
 
@@ -128,8 +105,7 @@ $card = $customerService->storePaymentMethod($user, $paymentMethodId, $setAsDefa
 $setupIntent = $customerService->createSetupIntent($user);
 ```
 
-#### Product Service
-
+### Product Service
 ```php
 use EmmanuelSaleem\LaravelStripeManager\Services\ProductService;
 
@@ -154,8 +130,7 @@ $pricing = $productService->createProductPrice($product, [
 ]);
 ```
 
-#### Subscription Service
-
+### Subscription Service
 ```php
 use EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService;
 
@@ -172,69 +147,12 @@ $subscriptionService->cancelSubscription($subscription, $immediately = false);
 
 // Resume a subscription
 $subscriptionService->resumeSubscription($subscription);
-
-// Change subscription plan
-$subscriptionService->changePlan($subscription, $newPricing);
 ```
 
-### Working with Models
+## 🔗 Webhook Setup
 
-#### StripeProduct
-
-```php
-use EmmanuelSaleem\LaravelStripeManager\Models\StripeProduct;
-
-$product = StripeProduct::with('pricing', 'subscriptions')->find(1);
-```
-
-#### StripeProductPricing
-
-```php
-use EmmanuelSaleem\LaravelStripeManager\Models\StripeProductPricing;
-
-$pricing = StripeProductPricing::with('product', 'subscriptions')->find(1);
-echo $pricing->formatted_price; // "USD 19.99 / month"
-```
-
-#### StripeSubscription
-
-```php
-use EmmanuelSaleem\LaravelStripeManager\Models\StripeSubscription;
-
-$subscription = StripeSubscription::with('user', 'product', 'pricing', 'payments')->find(1);
-
-// Check subscription status
-if ($subscription->isActive()) {
-    // Subscription is active
-}
-
-if ($subscription->onTrial()) {
-    // Subscription is on trial
-}
-
-if ($subscription->cancelled()) {
-    // Subscription is cancelled
-}
-```
-
-#### StripeCard
-
-```php
-use EmmanuelSaleem\LaravelStripeManager\Models\StripeCard;
-
-$cards = StripeCard::where('user_id', $userId)->get();
-
-foreach ($cards as $card) {
-    echo $card->masked_number; // "**** **** **** 1234"
-    echo $card->formatted_expiry; // "12/2025"
-    echo $card->brand_icon; // "fab fa-cc-visa"
-}
-```
-
-## Webhook Setup
-
-1. **Configure webhook endpoint in Stripe Dashboard**:
-   - URL: `https://yourdomain.com/stripe/webhook`
+1. **Configure webhook endpoint in Stripe Dashboard:**
+   - URL: `https://yourdomain.com/stripe-manager/webhooks/handle`
    - Events to send:
      - `invoice.payment_succeeded`
      - `invoice.payment_failed`
@@ -243,65 +161,88 @@ foreach ($cards as $card) {
      - `customer.subscription.deleted`
      - `customer.subscription.trial_will_end`
 
-2. **The webhook automatically handles**:
+2. **The webhook automatically handles:**
    - Payment success/failure tracking
    - Subscription status updates
    - Local database synchronization
 
-## Database Schema
+## 🗄️ Database Schema
 
 The package creates the following tables:
+- `em_stripe_products` - Stores Stripe products
+- `em_product_pricing` - Stores product pricing information
+- `em_stripe_subscriptions` - Stores subscription data
+- `em_subscription_payments` - Tracks payment history
+- `em_stripe_cards` - Stores customer payment methods
 
-- `stripe_products`: Stores Stripe products
-- `stripe_product_pricing`: Stores product pricing information
-- `stripe_subscriptions`: Stores subscription data
-- `stripe_subscription_payments`: Tracks payment history
-- `stripe_cards`: Stores customer payment methods
-
-## Routes
-
-### Web Interface Routes (requires authentication):
-- `GET /stripe-manager` - Dashboard
-- `GET /stripe-manager/customers` - Customer list
-- `GET /stripe-manager/products` - Product list
-- `GET /stripe-manager/subscriptions` - Subscription list
-
-### API Routes:
-- `POST /stripe/webhook` - Stripe webhook handler
-
-## Events and Logging
-
-The package logs all important events and errors. Check your Laravel logs for:
-- Customer creation/updates
-- Payment method changes
-- Subscription lifecycle events
-- Webhook processing
-- Error handling
-
-## Testing
+## 🧪 Testing
 
 ```bash
 # Run package tests
 vendor/bin/phpunit packages/emmanuelsaleem/laravel-stripe-manager/tests
 ```
 
-## Contributing
+## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+We welcome contributions! Here's how you can help:
 
-## License
+### Development Setup
+
+1. **Fork the repository**
+2. **Clone your fork:**
+```bash
+git clone https://github.com/yourusername/laravel-stripe-manager.git
+cd laravel-stripe-manager
+```
+
+3. **Install dependencies:**
+```bash
+composer install
+```
+
+4. **Create a feature branch:**
+```bash
+git checkout -b feature/your-feature-name
+```
+
+5. **Make your changes and add tests**
+
+6. **Run tests:**
+```bash
+vendor/bin/phpunit
+```
+
+7. **Commit your changes:**
+```bash
+git commit -m "Add your feature description"
+```
+
+8. **Push to your fork:**
+```bash
+git push origin feature/your-feature-name
+```
+
+9. **Create a Pull Request**
+
+### Contribution Guidelines
+
+- Follow PSR-12 coding standards
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass
+- Use meaningful commit messages
+
+## 📄 License
 
 This package is open-sourced software licensed under the [MIT license](LICENSE).
 
-## Support
+## 🆘 Support
 
-For support, please create an issue on the GitHub repository or contact [emmanuelsaleem098765@gmail.com](mailto:emmanuel.saleem@example.com).
+For support, please:
+- Create an issue on the [GitHub repository](https://github.com/emmanuelsaleem/laravel-stripe-manager/issues)
+- Contact [emmanuelsaleem098765@gmail.com](mailto:emmanuelsaleem098765@gmail.com)
 
-## Changelog
+## 📝 Changelog
 
 ### v1.0.0
 - Initial release
