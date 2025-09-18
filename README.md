@@ -27,6 +27,8 @@ php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\Strip
 php artisan migrate
 ```
 
+**Note:** The migration will automatically add a `stripe_id` column to your `users` table if it doesn't already exist.
+
 5. **Publish views (optional):**
 ```bash
 php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="views"
@@ -42,14 +44,15 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 CASHIER_CURRENCY=usd
 ```
 
-2. **Update your User model to use Cashier:**
+2. **Update your User model to use Cashier and Stripe Manager:**
 ```php
 // In your User model
 use Laravel\Cashier\Billable;
+use EmmanuelSaleem\LaravelStripeManager\Traits\HasStripeId;
 
 class User extends Authenticatable
 {
-    use Billable;
+    use Billable, HasStripeId;
 }
 ```
 
