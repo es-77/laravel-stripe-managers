@@ -3,6 +3,7 @@
 namespace EmmanuelSaleem\LaravelStripeManager;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Http\Request;
 use EmmanuelSaleem\LaravelStripeManager\Services\CustomerService;
 use EmmanuelSaleem\LaravelStripeManager\Services\ProductService;
 use EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService;
@@ -11,6 +12,11 @@ class StripeManagerServiceProvider extends ServiceProvider
 {
     public function register()
     {
+        // Ensure a minimal Request is bound in console to avoid UrlGenerator errors
+        if ($this->app->runningInConsole() && ! $this->app->bound('request')) {
+            $this->app->instance('request', Request::create('/', 'GET'));
+        }
+
         $this->mergeConfigFrom(
             __DIR__.'/../config/stripe-manager.php', 'stripe-manager'
         );
