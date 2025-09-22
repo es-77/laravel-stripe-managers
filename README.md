@@ -16,23 +16,25 @@ composer require emmanuelsaleem/laravel-stripe-manager
 composer require laravel/cashier stripe/stripe-php
 ```
 
-3. **Publish configuration:**
-```bash
-php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="config"
-```
-
-4. **Publish and run migrations:**
+3. **Publish and run migrations:**
 ```bash
 php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="migrations"
 php artisan migrate
 ```
 
-**Note:** The migration will automatically add a `stripe_id` column to your `users` table if it doesn't already exist.
-
-5. **Publish views (optional):**
+4. **Publish views (optional):**
 ```bash
 php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="views"
 ```
+
+5. **Publish configuration:**
+```bash
+php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\StripeManagerServiceProvider" --tag="config"
+```
+
+
+**Note:** The migration will automatically add a `stripe_id` column to your `users` table if it doesn't already exist.
+
 
 ### Configuration
 
@@ -244,6 +246,7 @@ This package is open-sourced software licensed under the [MIT license](LICENSE).
 For support, please:
 - Create an issue on the [GitHub repository](https://github.com/emmanuelsaleem/laravel-stripe-manager/issues)
 - Contact [emmanuelsaleem098765@gmail.com](mailto:emmanuelsaleem098765@gmail.com)
+- Connect on [LinkedIn](http://linkedin.com/in/es77)
 
 ## 📝 Changelog
 
