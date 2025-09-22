@@ -36,9 +36,14 @@ class StripeManagerServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        $this->loadRoutesFrom(__DIR__.'/Routes/web.php');
-        $this->loadRoutesFrom(__DIR__.'/Routes/webhook.php');
-        $this->loadViewsFrom(__DIR__.'/Views', 'stripe-manager');
+        // Avoid loading HTTP layers when running in console (e.g., vendor:publish, migrate)
+        if (! $this->app->runningInConsole()) {
+            $this->loadRoutesFrom(__DIR__.'/Routes/web.php');
+            $this->loadRoutesFrom(__DIR__.'/Routes/webhook.php');
+            $this->loadViewsFrom(__DIR__.'/Views', 'stripe-manager');
+        }
+
+        // Migrations can be safely loaded in console
         $this->loadMigrationsFrom(__DIR__.'/Migrations');
 
         $this->publishes([
