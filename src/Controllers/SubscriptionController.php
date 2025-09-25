@@ -10,11 +10,18 @@ use App\Http\Controllers\Controller;
 use EmmanuelSaleem\LaravelStripeManager\Models\StripeProduct;
 use EmmanuelSaleem\LaravelStripeManager\Models\StripeProductPricing;
 use EmmanuelSaleem\LaravelStripeManager\Models\StripeSubscription;
+use EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class SubscriptionController extends Controller
 {
+    protected SubscriptionService $subscriptionService;
+
+    public function __construct(SubscriptionService $subscriptionService)
+    {
+        $this->subscriptionService = $subscriptionService;
+    }
     /**
      * Get the configurable user model
      */
@@ -143,20 +150,9 @@ class SubscriptionController extends Controller
     public function cancel(StripeSubscription $subscription)
     {
         try {
-            $customer = $subscription->user;
-            $stripeSubscription = $customer->subscription('default');
-            
-            if ($stripeSubscription && $stripeSubscription->stripe_id === $subscription->stripe_subscription_id) {
-                $stripeSubscription->cancel();
-                
-                $subscription->update([
-                    'status' => 'canceled',
-                    'ends_at' => now(),
-                ]);
-            }
-
+            $immediately = (bool) request('immediately', false);
+            $this->subscriptionService->cancelSubscription($subscription, $immediately);
             return back()->with('success', 'Subscription canceled successfully!');
-
         } catch (\Exception $e) {
             return back()->with('error', 'Error canceling subscription: ' . $e->getMessage());
         }
@@ -165,20 +161,8 @@ class SubscriptionController extends Controller
     public function resume(StripeSubscription $subscription)
     {
         try {
-            $customer = $subscription->user;
-            $stripeSubscription = $customer->subscription('default');
-            
-            if ($stripeSubscription && $stripeSubscription->stripe_id === $subscription->stripe_subscription_id) {
-                $stripeSubscription->resume();
-                
-                $subscription->update([
-                    'status' => 'active',
-                    'ends_at' => null,
-                ]);
-            }
-
+            $this->subscriptionService->resumeSubscription($subscription);
             return back()->with('success', 'Subscription resumed successfully!');
-
         } catch (\Exception $e) {
             return back()->with('error', 'Error resuming subscription: ' . $e->getMessage());
         }

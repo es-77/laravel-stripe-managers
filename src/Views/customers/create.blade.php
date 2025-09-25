@@ -132,7 +132,7 @@
 </div>
 
 <script>
-const stripe = Stripe('{{ config('cashier.key') }}');
+const stripe = Stripe(window.STRIPE_PUBLISHABLE_KEY);
 const elements = stripe.elements();
 const cardElement = elements.create('card', { style: { base: { fontSize: '16px' } } });
 cardElement.mount('#card-element');
