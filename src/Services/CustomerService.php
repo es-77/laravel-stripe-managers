@@ -13,6 +13,22 @@ use Stripe\SetupIntent;
 class CustomerService
 {
     /**
+     * Tracks whether the Stripe API key has been set for this instance
+     */
+    protected bool $apiKeySet = false;
+
+    /**
+     * Lazily ensure the Stripe API key is configured
+     */
+    protected function ensureApiKey(): void
+    {
+        if (!$this->apiKeySet) {
+            \Stripe\Stripe::setApiKey(config('stripe-manager.stripe.secret'));
+            $this->apiKeySet = true;
+        }
+    }
+
+    /**
      * Get the configurable user model
      */
     protected function getUserModel()
@@ -22,7 +38,7 @@ class CustomerService
 
     public function __construct()
     {
-        Stripe::setApiKey(config('stripe-manager.stripe.secret'));
+        // Intentionally left empty; API key will be set lazily
     }
 
     /**
@@ -30,6 +46,7 @@ class CustomerService
      */
     public function createCustomer($user, array $data = [])
     {
+        $this->ensureApiKey();
         try {
             $customerData = array_merge([
                 'name' => $user->name,
@@ -60,6 +77,7 @@ class CustomerService
      */
     public function updateCustomer($user, array $data)
     {
+        $this->ensureApiKey();
         try {
             if (!$user->hasStripeId()) {
                 throw new \Exception('User does not have a Stripe customer ID');
@@ -87,6 +105,7 @@ class CustomerService
      */
     public function storePaymentMethod($user, string $paymentMethodId, bool $setAsDefault = false): StripeCard
     {
+        $this->ensureApiKey();
         try {
             if (!$user->hasStripeId()) {
                 throw new \Exception('User does not have a Stripe customer ID');
@@ -145,6 +164,7 @@ class CustomerService
      */
     public function removePaymentMethod($user, string $paymentMethodId): bool
     {
+        $this->ensureApiKey();
         try {
             // Detach from Stripe
             $paymentMethod = PaymentMethod::retrieve($paymentMethodId);
@@ -176,6 +196,7 @@ class CustomerService
      */
     public function setDefaultPaymentMethod($user, string $paymentMethodId): bool
     {
+        $this->ensureApiKey();
         try {
             if (!$user->hasStripeId()) {
                 throw new \Exception('User does not have a Stripe customer ID');
@@ -215,6 +236,7 @@ class CustomerService
      */
     public function createSetupIntent($user): SetupIntent
     {
+        $this->ensureApiKey();
         try {
             if (!$user->hasStripeId()) {
                 throw new \Exception('User does not have a Stripe customer ID');
@@ -246,6 +268,7 @@ class CustomerService
      */
     public function getPaymentMethods($user): array
     {
+        $this->ensureApiKey();
         try {
             if (!$user->hasStripeId()) {
                 return [];
@@ -271,6 +294,7 @@ class CustomerService
      */
     public function syncPaymentMethods($user): void
     {
+        $this->ensureApiKey();
         try {
             $stripePaymentMethods = $this->getPaymentMethods($user);
             $existingPaymentMethodIds = StripeCard::where('user_id', $user->id)

@@ -11,9 +11,25 @@ use Stripe\Price;
 
 class ProductService
 {
+    /**
+     * Tracks whether the Stripe API key has been set for this instance
+     */
+    protected bool $apiKeySet = false;
+
+    /**
+     * Lazily ensure the Stripe API key is configured
+     */
+    protected function ensureApiKey(): void
+    {
+        if (!$this->apiKeySet) {
+            \Stripe\Stripe::setApiKey(config('stripe-manager.stripe.secret'));
+            $this->apiKeySet = true;
+        }
+    }
+
     public function __construct()
     {
-        Stripe::setApiKey(config('stripe-manager.stripe.secret'));
+        // Intentionally left empty; API key will be set lazily
     }
 
     /**
@@ -21,6 +37,7 @@ class ProductService
      */
     public function createProduct(array $data): StripeProduct
     {
+        $this->ensureApiKey();
         try {
             // Create product in Stripe
             $stripeProduct = Product::create([
@@ -59,6 +76,7 @@ class ProductService
      */
     public function updateProduct(StripeProduct $product, array $data): StripeProduct
     {
+        $this->ensureApiKey();
         try {
             // Update product in Stripe
             Product::update($product->stripe_id, [
@@ -97,6 +115,7 @@ class ProductService
      */
     public function deleteProduct(StripeProduct $product): bool
     {
+        $this->ensureApiKey();
         try {
             // Archive product in Stripe (can't delete, only archive)
             Product::update($product->stripe_id, ['active' => false]);
@@ -124,6 +143,7 @@ class ProductService
      */
     public function createProductPrice(StripeProduct $product, array $priceData): StripeProductPricing
     {
+        $this->ensureApiKey();
         try {
             // Create price in Stripe
             $stripePrice = Price::create([
@@ -173,6 +193,7 @@ class ProductService
      */
     public function updateProductPrice(StripeProductPricing $pricing, array $data): StripeProductPricing
     {
+        $this->ensureApiKey();
         try {
             // Update price in Stripe (only active and metadata can be updated)
             Price::update($pricing->stripe_price_id, [
@@ -209,6 +230,7 @@ class ProductService
      */
     public function archivePrice(StripeProductPricing $pricing): bool
     {
+        $this->ensureApiKey();
         try {
             // Deactivate price in Stripe
             Price::update($pricing->stripe_price_id, ['active' => false]);
@@ -236,6 +258,7 @@ class ProductService
      */
     public function syncProductsFromStripe(int $limit = 100): array
     {
+        $this->ensureApiKey();
         try {
             $stripeProducts = Product::all(['limit' => $limit]);
             $synced = [];
@@ -272,6 +295,7 @@ class ProductService
      */
     public function syncPricesFromStripe(StripeProduct $product): array
     {
+        $this->ensureApiKey();
         try {
             $stripePrices = Price::all([
                 'product' => $product->stripe_id,

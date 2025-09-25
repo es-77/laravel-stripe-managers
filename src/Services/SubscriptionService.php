@@ -15,6 +15,22 @@ use Carbon\Carbon;
 class SubscriptionService
 {
     /**
+     * Tracks whether the Stripe API key has been set for this instance
+     */
+    protected bool $apiKeySet = false;
+
+    /**
+     * Lazily ensure the Stripe API key is configured
+     */
+    protected function ensureApiKey(): void
+    {
+        if (!$this->apiKeySet) {
+            \Stripe\Stripe::setApiKey(config('stripe-manager.stripe.secret'));
+            $this->apiKeySet = true;
+        }
+    }
+
+    /**
      * Get the configurable user model
      */
     protected function getUserModel()
@@ -24,7 +40,7 @@ class SubscriptionService
 
     public function __construct()
     {
-        Stripe::setApiKey(config('stripe-manager.stripe.secret'));
+        // Intentionally left empty; API key will be set lazily
     }
 
     /**
@@ -32,6 +48,7 @@ class SubscriptionService
      */
     public function createSubscription($user, StripeProductPricing $pricing, array $options = []): StripeSubscription
     {
+        $this->ensureApiKey();
         try {
             if (!$user->hasStripeId()) {
                 throw new \Exception('User does not have a Stripe customer ID');
@@ -106,6 +123,7 @@ class SubscriptionService
      */
     public function updateSubscription(StripeSubscription $subscription, array $data): StripeSubscription
     {
+        $this->ensureApiKey();
         try {
             $updateData = [];
 
@@ -170,6 +188,7 @@ class SubscriptionService
      */
     public function cancelSubscription(StripeSubscription $subscription, bool $immediately = false): StripeSubscription
     {
+        $this->ensureApiKey();
         try {
             if ($immediately) {
                 // Cancel immediately
@@ -215,6 +234,7 @@ class SubscriptionService
      */
     public function resumeSubscription(StripeSubscription $subscription): StripeSubscription
     {
+        $this->ensureApiKey();
         try {
             // Resume subscription in Stripe
             $stripeSubscription = Subscription::update($subscription->stripe_subscription_id, [
@@ -247,6 +267,7 @@ class SubscriptionService
      */
     public function changePlan(StripeSubscription $subscription, StripeProductPricing $newPricing, array $options = []): StripeSubscription
     {
+        $this->ensureApiKey();
         try {
             $subscriptionItemId = $this->getSubscriptionItemId($subscription->stripe_subscription_id);
 
@@ -298,6 +319,7 @@ class SubscriptionService
      */
     public function syncSubscription(string $stripeSubscriptionId): ?StripeSubscription
     {
+        $this->ensureApiKey();
         try {
             $stripeSubscription = Subscription::retrieve($stripeSubscriptionId);
 
@@ -341,6 +363,7 @@ class SubscriptionService
      */
     private function getSubscriptionItemId(string $stripeSubscriptionId): string
     {
+        $this->ensureApiKey();
         $stripeSubscription = Subscription::retrieve($stripeSubscriptionId);
         return $stripeSubscription->items->data[0]->id;
     }
