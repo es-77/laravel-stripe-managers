@@ -53,6 +53,12 @@ Route::group([
         'show' => 'stripe-manager.customers.show',
     ]);
 
+    // AJAX endpoints for combined create + card collection
+    Route::post('customers/init-setup', [CustomerController::class, 'initSetup'])
+        ->name('stripe-manager.customers.init-setup');
+    Route::post('customers/finalize-setup', [CustomerController::class, 'finalizeSetup'])
+        ->name('stripe-manager.customers.finalize-setup');
+
     Route::get('customers/{customer}/setup-payment', [CustomerController::class, 'setupPaymentMethod'])
         ->name('stripe-manager.customers.setup-payment');
     Route::post('customers/{customer}/payment-methods', [CustomerController::class, 'storePaymentMethod'])

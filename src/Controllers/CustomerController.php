@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use EmmanuelSaleem\LaravelStripeManager\Services\CustomerService;
 use EmmanuelSaleem\LaravelStripeManager\Models\StripeCard;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class CustomerController extends Controller
 {
@@ -169,5 +170,60 @@ class CustomerController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Error updating default payment method: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Initialize customer creation + setup intent (AJAX)
+     */
+    public function initSetup(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+        ]);
+
+        $user = $this->getUserModel()::findOrFail($validated['user_id']);
+
+        if (!$user->hasStripeId()) {
+            $this->customerService->createCustomer($user, [
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+            ]);
+            $user->refresh();
+        }
+
+        $intent = $this->customerService->createSetupIntent($user);
+
+        return response()->json([
+            'client_secret' => $intent->client_secret,
+            'customer_id' => $user->id,
+            'stripe_customer_id' => $user->stripe_id,
+        ]);
+    }
+
+    /**
+     * Finalize setup by attaching the payment method (AJAX)
+     */
+    public function finalizeSetup(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:users,id',
+            'payment_method' => 'required|string',
+            'set_as_default' => 'sometimes|boolean',
+        ]);
+
+        $user = $this->getUserModel()::findOrFail($validated['customer_id']);
+
+        $card = $this->customerService->storePaymentMethod(
+            $user,
+            $validated['payment_method'],
+            $request->boolean('set_as_default', true)
+        );
+
+        return response()->json([
+            'ok' => true,
+            'card_id' => $card->id,
+        ]);
     }
 }

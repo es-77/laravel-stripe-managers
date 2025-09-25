@@ -29,7 +29,7 @@
                 </div>
             </div>
             <div class="card-body">
-                <form action="{{ route('stripe-manager.customers.store') }}" method="POST">
+                <form id="create-customer-form" action="{{ route('stripe-manager.customers.store') }}" method="POST">
                     @csrf
                     
                     <div class="mb-3">
@@ -83,12 +83,26 @@
                         @enderror
                     </div>
                     
+                    <div class="mb-4">
+                        <label class="form-label">Card Details (optional)</label>
+                        <div id="card-element" class="form-control" style="height: 40px; padding: 10px;"></div>
+                        <div id="card-errors" class="text-danger mt-2"></div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="set_as_default" name="set_as_default" checked>
+                            <label class="form-check-label" for="set_as_default">
+                                Set as default payment method
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Create Customer
+                        <button type="button" id="create-and-save" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>Create Customer & Save Card
                         </button>
-                        <a href="{{ route('stripe-manager.customers.index') }}" 
-                           class="btn btn-secondary">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-user me-2"></i>Create Without Card
+                        </button>
+                        <a href="{{ route('stripe-manager.customers.index') }}" class="btn btn-secondary">
                             Cancel
                         </a>
                     </div>
@@ -118,6 +132,67 @@
 </div>
 
 <script>
+const stripe = Stripe('{{ config('cashier.key') }}');
+const elements = stripe.elements();
+const cardElement = elements.create('card', { style: { base: { fontSize: '16px' } } });
+cardElement.mount('#card-element');
+cardElement.on('change', function(event) {
+    document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+});
+
+async function initSetup(userId, name, email) {
+    const resp = await fetch("{{ route('stripe-manager.customers.init-setup') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+        },
+        body: JSON.stringify({ user_id: userId, name, email })
+    });
+    if (!resp.ok) throw new Error('Failed to init setup');
+    return await resp.json();
+}
+
+async function finalizeSetup(customerId, paymentMethod, setAsDefault) {
+    const resp = await fetch("{{ route('stripe-manager.customers.finalize-setup') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+        },
+        body: JSON.stringify({ customer_id: customerId, payment_method: paymentMethod, set_as_default: setAsDefault })
+    });
+    if (!resp.ok) throw new Error('Failed to finalize');
+    return await resp.json();
+}
+
+document.getElementById('create-and-save').addEventListener('click', async function () {
+    const userId = document.getElementById('user_id').value;
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const setAsDefault = document.getElementById('set_as_default').checked;
+
+    if (!userId || !name || !email) {
+        document.getElementById('card-errors').textContent = 'Please fill user, name and email first.';
+        return;
+    }
+
+    try {
+        this.disabled = true;
+        const { client_secret, customer_id } = await initSetup(userId, name, email);
+
+        const { setupIntent, error } = await stripe.confirmCardSetup(client_secret, {
+            payment_method: { card: cardElement, billing_details: { name, email } }
+        });
+        if (error) throw error;
+
+        await finalizeSetup(customer_id, setupIntent.payment_method, setAsDefault);
+        window.location = "{{ route('stripe-manager.customers.index') }}";
+    } catch (e) {
+        document.getElementById('card-errors').textContent = e.message || 'Failed to save card.';
+        this.disabled = false;
+    }
+});
 document.getElementById('user_id').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption.value) {

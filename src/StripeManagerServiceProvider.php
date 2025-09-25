@@ -3,6 +3,7 @@
 namespace EmmanuelSaleem\LaravelStripeManager;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Pagination\Paginator;
 use EmmanuelSaleem\LaravelStripeManager\Services\CustomerService;
 use EmmanuelSaleem\LaravelStripeManager\Services\ProductService;
 use EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService;
@@ -39,6 +40,9 @@ class StripeManagerServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Use Bootstrap 5 for paginator views
+        Paginator::useBootstrapFive();
+
         // Load routes only when not running in console to avoid unnecessary HTTP setup
         if (! $this->app->runningInConsole()) {
             $this->loadRoutesFrom(__DIR__.'/Routes/web.php');
