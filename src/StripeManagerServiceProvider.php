@@ -53,15 +53,15 @@ class StripeManagerServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/stripe-manager.php' => config_path('stripe-manager.php'),
-            ], 'stripe-manager-config');
+            ], 'config');
 
             $this->publishes([
                 __DIR__.'/Views' => resource_path('views/vendor/stripe-manager'),
-            ], 'stripe-manager-views');
+            ], 'views');
 
             $this->publishes([
                 __DIR__.'/Migrations' => database_path('migrations'),
-            ], 'stripe-manager-migrations');
+            ], 'migrations');
         }
     }
 }
