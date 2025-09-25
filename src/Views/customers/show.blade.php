@@ -48,21 +48,47 @@
             </div>
         </div>
         
-        @if(count($paymentMethods) > 0)
+        @if(isset($cards) && count($cards) > 0)
             <div class="card">
                 <div class="card-header">
                     <h5>Payment Methods</h5>
                 </div>
                 <div class="card-body">
-                    @foreach($paymentMethods as $method)
-                        <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
-                            <i class="fab fa-cc-{{ $method->card->brand }} fa-2x me-3"></i>
-                            <div>
-                                <strong>•••• •••• •••• {{ $method->card->last4 }}</strong><br>
-                                <small class="text-muted">
-                                    {{ ucfirst($method->card->brand) }} • 
-                                    {{ $method->card->exp_month }}/{{ $method->card->exp_year }}
-                                </small>
+                    @foreach($cards as $card)
+                        <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-light rounded">
+                            <div class="d-flex align-items-center">
+                                <i class="fab fa-cc-{{ $card->brand }} fa-2x me-3"></i>
+                                <div>
+                                    <strong>•••• •••• •••• {{ $card->last_four }}</strong>
+                                    @if($card->is_default)
+                                        <span class="badge bg-success ms-2">Default</span>
+                                    @endif
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ ucfirst($card->brand) }} • 
+                                        {{ $card->exp_month }}/{{ $card->exp_year }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                @if(!$card->is_default)
+                                <form action="{{ route('stripe-manager.customers.set-default-payment-method', $customer) }}" method="POST" class="m-0">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="payment_method" value="{{ $card->stripe_payment_method_id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        Set Default
+                                    </button>
+                                </form>
+                                @endif
+                                <form action="{{ route('stripe-manager.customers.remove-payment-method', $customer) }}" method="POST" class="m-0" onsubmit="return confirm('Remove this payment method?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <input type="hidden" name="payment_method" value="{{ $card->stripe_payment_method_id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        Delete
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     @endforeach
@@ -72,6 +98,30 @@
     </div>
     
     <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Add New Payment Method</h5>
+            </div>
+            <div class="card-body">
+                @if(!$customer->hasStripeId())
+                    <div class="alert alert-warning">Customer must have a Stripe ID first. Use the Create page with card or click "Setup Payment Method".</div>
+                @else
+                <div class="mb-3">
+                    <label class="form-label">Card Details</label>
+                    <div id="card-element" class="form-control" style="height: 40px; padding: 10px;"></div>
+                    <div id="card-errors" class="text-danger mt-2"></div>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="set_as_default" checked>
+                    <label class="form-check-label" for="set_as_default">Set as default</label>
+                </div>
+                <button id="add-card-btn" class="btn btn-primary">
+                    <i class="fas fa-credit-card me-2"></i>Add Card
+                </button>
+                @endif
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5>Subscriptions</h5>
@@ -134,4 +184,53 @@
         </div>
     </div>
 </div>
+
+@if($customer->hasStripeId())
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof Stripe === 'undefined') return;
+    if (!window.STRIPE_PUBLISHABLE_KEY) return;
+
+    const stripe = Stripe(window.STRIPE_PUBLISHABLE_KEY);
+    const elements = stripe.elements();
+    const cardElement = elements.create('card', { style: { base: { fontSize: '16px' } } });
+    cardElement.mount('#card-element');
+    cardElement.on('change', function(event) {
+        document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+    });
+
+    const addBtn = document.getElementById('add-card-btn');
+    if (addBtn) {
+        addBtn.addEventListener('click', async function() {
+            try {
+                this.disabled = true;
+                const resp = await fetch("{{ route('stripe-manager.customers.init-setup') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content') },
+                    body: JSON.stringify({ user_id: {{ $customer->id }}, name: "{{ $customer->name }}", email: "{{ $customer->email }}" })
+                });
+                if (!resp.ok) throw new Error('Failed to init setup');
+                const { client_secret } = await resp.json();
+
+                const { setupIntent, error } = await stripe.confirmCardSetup(client_secret, {
+                    payment_method: { card: cardElement, billing_details: { name: "{{ $customer->name }}", email: "{{ $customer->email }}" } }
+                });
+                if (error) throw error;
+
+                const finalize = await fetch("{{ route('stripe-manager.customers.finalize-setup') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content') },
+                    body: JSON.stringify({ customer_id: {{ $customer->id }}, payment_method: setupIntent.payment_method, set_as_default: document.getElementById('set_as_default').checked })
+                });
+                if (!finalize.ok) throw new Error('Failed to save card');
+                window.location.reload();
+            } catch (e) {
+                document.getElementById('card-errors').textContent = e.message || 'Failed to save card.';
+                this.disabled = false;
+            }
+        });
+    }
+});
+</script>
+@endif
 @endsection
