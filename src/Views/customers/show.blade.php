@@ -48,59 +48,55 @@
             </div>
         </div>
         
-        @if(isset($cards) && count($cards) > 0)
-            <div class="card">
-                <div class="card-header">
-                    <h5>Payment Methods</h5>
-                </div>
-                <div class="card-body">
-                    @foreach($cards as $card)
-                        <div class="d-flex align-items-center justify-content-between mb-2 p-2 bg-light rounded">
-                            <div class="d-flex align-items-center">
-                                <i class="fab fa-cc-{{ $card->brand }} fa-2x me-3"></i>
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="section-title">Payment Methods</span>
+                <span class="text-muted small">Manage saved cards</span>
+            </div>
+            <div class="card-body">
+                @forelse($cards ?? [] as $card)
+                    <div class="d-flex align-items-center justify-content-between mb-2 p-2 rounded pm-card-item">
+                        <div class="d-flex align-items-center">
+                            <div class="pm-card-brand me-3"><i class="fab fa-cc-{{ $card->brand }}"></i></div>
+                            <div>
                                 <div>
                                     <strong>•••• •••• •••• {{ $card->last_four }}</strong>
                                     @if($card->is_default)
-                                        <span class="badge bg-success ms-2">Default</span>
+                                        <span class="badge badge-soft ms-2">Default</span>
                                     @endif
-                                    <br>
-                                    <small class="text-muted">
-                                        {{ ucfirst($card->brand) }} • 
-                                        {{ $card->exp_month }}/{{ $card->exp_year }}
-                                    </small>
                                 </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                @if(!$card->is_default)
-                                <form action="{{ route('stripe-manager.customers.set-default-payment-method', $customer) }}" method="POST" class="m-0">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="payment_method" value="{{ $card->stripe_payment_method_id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                        Set Default
-                                    </button>
-                                </form>
-                                @endif
-                                <form action="{{ route('stripe-manager.customers.remove-payment-method', $customer) }}" method="POST" class="m-0" onsubmit="return confirm('Remove this payment method?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <input type="hidden" name="payment_method" value="{{ $card->stripe_payment_method_id }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        Delete
-                                    </button>
-                                </form>
+                                <small class="text-muted">{{ ucfirst($card->brand) }} • Expires {{ sprintf('%02d', $card->exp_month) }}/{{ $card->exp_year }}</small>
                             </div>
                         </div>
-                    @endforeach
-                </div>
+                        <div class="list-actions d-flex gap-2">
+                            @if(!$card->is_default)
+                            <form action="{{ route('stripe-manager.customers.set-default-payment-method', $customer) }}" method="POST" class="m-0">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="payment_method" value="{{ $card->stripe_payment_method_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Make Default</button>
+                            </form>
+                            @endif
+                            <form action="{{ route('stripe-manager.customers.remove-payment-method', $customer) }}" method="POST" class="m-0" onsubmit="return confirm('Remove this payment method?');">
+                                @csrf
+                                @method('DELETE')
+                                <input type="hidden" name="payment_method" value="{{ $card->stripe_payment_method_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center text-muted">No saved cards yet.</div>
+                @endforelse
             </div>
-        @endif
+        </div>
     </div>
     
     <div class="col-md-8">
         <div class="card mb-4">
-            <div class="card-header">
-                <h5>Add New Payment Method</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="section-title">Add New Payment Method</span>
+                <small class="text-muted">Card saved to Stripe</small>
             </div>
             <div class="card-body">
                 @if(!$customer->hasStripeId())
@@ -108,7 +104,7 @@
                 @else
                 <div class="mb-3">
                     <label class="form-label">Card Details</label>
-                    <div id="card-element" class="form-control" style="height: 40px; padding: 10px;"></div>
+                    <div id="card-element" class="form-control" style="height: 44px; padding: 10px;"></div>
                     <div id="card-errors" class="text-danger mt-2"></div>
                 </div>
                 <div class="form-check mb-3">
