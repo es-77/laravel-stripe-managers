@@ -15,7 +15,18 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5>Customer Information</h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Customer Information</h5>
+                    <form method="GET" action="{{ url()->current() }}" class="d-flex gap-2">
+                        <input type="text" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Search users by name, email, or ID" />
+                        <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                            @foreach([10,25,50,100] as $size)
+                                <option value="{{ $size }}" {{ (int)request('per_page', 25) === $size ? 'selected' : '' }}>{{ $size }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Search</button>
+                    </form>
+                </div>
             </div>
             <div class="card-body">
                 <form action="{{ route('stripe-manager.customers.store') }}" method="POST">
@@ -39,6 +50,11 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                         <div class="form-text">Only users without Stripe accounts are shown.</div>
+                        @if(method_exists($users, 'links'))
+                            <div class="mt-2">
+                                {{ $users->onEachSide(1)->links() }}
+                            </div>
+                        @endif
                     </div>
                     
                     <div class="mb-3">

@@ -53,8 +53,25 @@ class CustomerController extends Controller
 
     public function create()
     {
-        $users = $this->getUserModel()::whereNull('stripe_id')->get();
-        return view('stripe-manager::customers.create', compact('users'));
+        $query = request('q');
+        $perPage = (int) (request('per_page') ?: 25);
+
+        $users = $this->getUserModel()::query()
+            ->whereNull('stripe_id')
+            ->when($query, function ($builder) use ($query) {
+                $builder->where(function ($q) use ($query) {
+                    $q->where('name', 'like', "%{$query}%")
+                      ->orWhere('email', 'like', "%{$query}%");
+                    if (is_numeric($query)) {
+                        $q->orWhere('id', (int) $query);
+                    }
+                });
+            })
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('stripe-manager::customers.create', compact('users', 'query', 'perPage'));
     }
 
     public function store(Request $request)
