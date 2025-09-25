@@ -7,7 +7,9 @@ return [
         'secret' => env('STRIPE_SECRET'),
         'webhook' => [
             'secret' => env('STRIPE_WEBHOOK_SECRET'),
-            'endpoint' => env('STRIPE_WEBHOOK_ENDPOINT', url('/stripe-manager/webhooks/handle')),
+            // Do NOT call url() here; it triggers UrlGenerator during console/package discovery
+            // Prefer explicit STRIPE_WEBHOOK_ENDPOINT, else derive from APP_URL without helpers
+            'endpoint' => env('STRIPE_WEBHOOK_ENDPOINT', rtrim(env('APP_URL', ''), '/') . '/stripe-manager/webhooks/handle'),
             'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
         ],
     ],
