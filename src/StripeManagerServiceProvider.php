@@ -3,7 +3,6 @@
 namespace EmmanuelSaleem\LaravelStripeManager;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Http\Request;
 use EmmanuelSaleem\LaravelStripeManager\Services\CustomerService;
 use EmmanuelSaleem\LaravelStripeManager\Services\ProductService;
 use EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService;
@@ -12,10 +11,8 @@ class StripeManagerServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        // Ensure a minimal Request is bound in console to avoid UrlGenerator errors
-        if ($this->app->runningInConsole() && ! $this->app->bound('request')) {
-            $this->app->instance('request', Request::create('/', 'GET'));
-        }
+        // Remove the manual Request binding - this is causing the conflict!
+        // Laravel will handle Request binding properly on its own
 
         $this->mergeConfigFrom(
             __DIR__.'/../config/stripe-manager.php', 'stripe-manager'
@@ -42,26 +39,29 @@ class StripeManagerServiceProvider extends ServiceProvider
 
     public function boot()
     {
-        // Avoid loading HTTP layers when running in console (e.g., vendor:publish, migrate)
+        // Load routes only when not running in console to avoid unnecessary HTTP setup
         if (! $this->app->runningInConsole()) {
             $this->loadRoutesFrom(__DIR__.'/Routes/web.php');
             $this->loadRoutesFrom(__DIR__.'/Routes/webhook.php');
             $this->loadViewsFrom(__DIR__.'/Views', 'stripe-manager');
         }
 
-        // Migrations can be safely loaded in console
+        // Always load migrations as they don't require HTTP context
         $this->loadMigrationsFrom(__DIR__.'/Migrations');
 
-        $this->publishes([
-            __DIR__.'/../config/stripe-manager.php' => config_path('stripe-manager.php'),
-        ], 'config');
+        // Publishes
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/stripe-manager.php' => config_path('stripe-manager.php'),
+            ], 'stripe-manager-config');
 
-        $this->publishes([
-            __DIR__.'/Views' => resource_path('views/vendor/stripe-manager'),
-        ], 'views');
+            $this->publishes([
+                __DIR__.'/Views' => resource_path('views/vendor/stripe-manager'),
+            ], 'stripe-manager-views');
 
-        $this->publishes([
-            __DIR__.'/Migrations' => database_path('migrations'),
-        ], 'migrations');
+            $this->publishes([
+                __DIR__.'/Migrations' => database_path('migrations'),
+            ], 'stripe-manager-migrations');
+        }
     }
 }
