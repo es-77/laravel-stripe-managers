@@ -132,12 +132,61 @@
 </div>
 
 <script>
-const stripe = Stripe(window.STRIPE_PUBLISHABLE_KEY);
-const elements = stripe.elements();
-const cardElement = elements.create('card', { style: { base: { fontSize: '16px' } } });
-cardElement.mount('#card-element');
-cardElement.on('change', function(event) {
-    document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+// Wait for both DOM and Stripe to load
+function initializeStripe() {
+    if (typeof Stripe === 'undefined') {
+        console.error('Stripe is not loaded. Please check your internet connection and try again.');
+        document.getElementById('card-errors').textContent = 'Stripe is not loaded. Please refresh the page.';
+        return;
+    }
+
+    if (!window.STRIPE_PUBLISHABLE_KEY) {
+        console.error('Stripe publishable key is not configured.');
+        document.getElementById('card-errors').textContent = 'Stripe key not configured.';
+        return;
+    }
+
+    try {
+        const stripe = Stripe(window.STRIPE_PUBLISHABLE_KEY);
+        const elements = stripe.elements();
+        const cardElement = elements.create('card', { style: { base: { fontSize: '16px' } } });
+        cardElement.mount('#card-element');
+        cardElement.on('change', function(event) {
+            document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+        });
+        
+        // Store stripe instance globally for use in event handlers
+        window.stripeInstance = stripe;
+        window.cardElementInstance = cardElement;
+    } catch (error) {
+        console.error('Error initializing Stripe:', error);
+        document.getElementById('card-errors').textContent = 'Error initializing Stripe: ' + error.message;
+    }
+}
+
+// Try to initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // If Stripe is already loaded, initialize immediately
+    if (typeof Stripe !== 'undefined') {
+        initializeStripe();
+    } else {
+        // Otherwise, wait for Stripe to load
+        const checkStripe = setInterval(function() {
+            if (typeof Stripe !== 'undefined') {
+                clearInterval(checkStripe);
+                initializeStripe();
+            }
+        }, 100);
+        
+        // Timeout after 10 seconds
+        setTimeout(function() {
+            clearInterval(checkStripe);
+            if (typeof Stripe === 'undefined') {
+                console.error('Stripe failed to load within 10 seconds');
+                document.getElementById('card-errors').textContent = 'Stripe failed to load. Please refresh the page.';
+            }
+        }, 10000);
+    }
 });
 
 async function initSetup(userId, name, email) {
@@ -166,33 +215,34 @@ async function finalizeSetup(customerId, paymentMethod, setAsDefault) {
     return await resp.json();
 }
 
-document.getElementById('create-and-save').addEventListener('click', async function () {
-    const userId = document.getElementById('user_id').value;
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const setAsDefault = document.getElementById('set_as_default').checked;
+    document.getElementById('create-and-save').addEventListener('click', async function () {
+        const userId = document.getElementById('user_id').value;
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const setAsDefault = document.getElementById('set_as_default').checked;
 
-    if (!userId || !name || !email) {
-        document.getElementById('card-errors').textContent = 'Please fill user, name and email first.';
-        return;
-    }
+        if (!userId || !name || !email) {
+            document.getElementById('card-errors').textContent = 'Please fill user, name and email first.';
+            return;
+        }
 
-    try {
-        this.disabled = true;
-        const { client_secret, customer_id } = await initSetup(userId, name, email);
+        try {
+            this.disabled = true;
+            const { client_secret, customer_id } = await initSetup(userId, name, email);
 
-        const { setupIntent, error } = await stripe.confirmCardSetup(client_secret, {
-            payment_method: { card: cardElement, billing_details: { name, email } }
-        });
-        if (error) throw error;
+            const { setupIntent, error } = await window.stripeInstance.confirmCardSetup(client_secret, {
+                payment_method: { card: window.cardElementInstance, billing_details: { name, email } }
+            });
+            if (error) throw error;
 
-        await finalizeSetup(customer_id, setupIntent.payment_method, setAsDefault);
-        window.location = "{{ route('stripe-manager.customers.index') }}";
-    } catch (e) {
-        document.getElementById('card-errors').textContent = e.message || 'Failed to save card.';
-        this.disabled = false;
-    }
-});
+            await finalizeSetup(customer_id, setupIntent.payment_method, setAsDefault);
+            window.location = "{{ route('stripe-manager.customers.index') }}";
+        } catch (e) {
+            document.getElementById('card-errors').textContent = e.message || 'Failed to save card.';
+            this.disabled = false;
+        }
+    });
+
 document.getElementById('user_id').addEventListener('change', function() {
     const selectedOption = this.options[this.selectedIndex];
     if (selectedOption.value) {

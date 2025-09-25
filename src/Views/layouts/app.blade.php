@@ -55,6 +55,23 @@
     <script src="https://js.stripe.com/v3"></script>
     <script>
         window.STRIPE_PUBLISHABLE_KEY = "{{ config('stripe.key') ?: config('cashier.key') }}";
+        
+        // Ensure Stripe is loaded before any page scripts run
+        window.addEventListener('load', function() {
+            if (typeof Stripe === 'undefined') {
+                console.error('Failed to load Stripe.js. Please check your internet connection.');
+                // Try to reload Stripe script
+                const script = document.createElement('script');
+                script.src = 'https://js.stripe.com/v3';
+                script.onload = function() {
+                    console.log('Stripe.js loaded successfully on retry');
+                };
+                script.onerror = function() {
+                    console.error('Failed to load Stripe.js on retry');
+                };
+                document.head.appendChild(script);
+            }
+        });
     </script>
 </body>
 </html>
