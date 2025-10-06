@@ -83,6 +83,9 @@
                     <a class="nav-link {{ request()->routeIs('stripe-manager.webhooks.*') ? 'active' : '' }}" href="{{ route('stripe-manager.webhooks.index') }}">
                         <i class="fas fa-webhook me-2"></i>Webhooks
                     </a>
+                    <a class="nav-link {{ request()->routeIs('stripe-manager.testing.stripe') ? 'active' : '' }}" href="{{ route('stripe-manager.testing.stripe') }}">
+                        <i class="fas fa-flask me-2"></i>Stripe Testing
+                    </a>
                 </nav>
             </div>
             

@@ -101,4 +101,8 @@ Route::group([
         ->name('stripe-manager.webhooks.test');
     Route::get('webhooks/logs', [WebhookController::class, 'logs'])
         ->name('stripe-manager.webhooks.logs');
+
+    // Stripe testing panel
+    Route::get('testing/stripe', [CustomerController::class, 'stripeTest'])
+        ->name('stripe-manager.testing.stripe');
 });

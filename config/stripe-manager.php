@@ -5,6 +5,12 @@ return [
         'model' => env('STRIPE_MODEL', App\Models\User::class),
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
+        // Query limits for Stripe API listings
+        'limits' => [
+            'subscriptions' => env('STRIPE_LIST_LIMIT_SUBSCRIPTIONS', 10),
+            'invoices' => env('STRIPE_LIST_LIMIT_INVOICES', 10),
+            'charges' => env('STRIPE_LIST_LIMIT_CHARGES', 8),
+        ],
         'webhook' => [
             'secret' => env('STRIPE_WEBHOOK_SECRET'),
             // Do NOT call url() here; it triggers UrlGenerator during console/package discovery

@@ -8,6 +8,7 @@ use EmmanuelSaleem\LaravelStripeManager\Services\CustomerService;
 use EmmanuelSaleem\LaravelStripeManager\Models\StripeCard;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
 class CustomerController extends Controller
 {
@@ -169,6 +170,80 @@ class CustomerController extends Controller
                 ->with('success', 'Default payment method updated successfully!');
         } catch (\Exception $e) {
             return back()->with('error', 'Error updating default payment method: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Stripe testing panel
+     * Accepts either local user id or stripe customer id (one required)
+     */
+    public function stripeTest(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $stripeCustomerId = $request->query('stripe_id');
+
+        if (!$userId && !$stripeCustomerId) {
+            return view('stripe-manager::customers.test', [
+                'error' => null,
+                'data' => null,
+            ]);
+        }
+
+        try {
+            $user = null;
+            if ($userId) {
+                $user = $this->getUserModel()::find($userId);
+                if (!$user) {
+                    return view('stripe-manager::customers.test', [
+                        'error' => 'Local user not found for id ' . $userId,
+                        'data' => null,
+                    ]);
+                }
+                if (!$user->stripe_id) {
+                    return view('stripe-manager::customers.test', [
+                        'error' => 'User does not have a Stripe customer id.',
+                        'data' => null,
+                    ]);
+                }
+                $stripeCustomerId = $user->stripe_id;
+            }
+
+            $secret = config('stripe.secret') ?: config('cashier.secret');
+            if (!$secret) {
+                return view('stripe-manager::customers.test', [
+                    'error' => 'Stripe secret key not configured.',
+                    'data' => null,
+                ]);
+            }
+
+            $client = new \Stripe\StripeClient($secret);
+
+            $customer = $client->customers->retrieve($stripeCustomerId);
+            $subscriptions = $client->subscriptions->all([
+                'customer' => $stripeCustomerId,
+                'limit' => (int) config('stripe-manager.stripe.limits.subscriptions', 10),
+                'expand' => ['data.items', 'data.latest_invoice', 'data.latest_invoice.payment_intent']
+            ]);
+            $invoices = $client->invoices->all([
+                'customer' => $stripeCustomerId,
+                'limit' => (int) config('stripe-manager.stripe.limits.invoices', 10)
+            ]);
+            $upcoming = null;
+            try { $upcoming = $client->invoices->upcoming(['customer' => $stripeCustomerId]); } catch (\Exception $e) { $upcoming = null; }
+            $paymentMethods = $client->paymentMethods->all(['customer' => $stripeCustomerId, 'type' => 'card']);
+            $charges = $client->charges->all([
+                'customer' => $stripeCustomerId,
+                'limit' => (int) config('stripe-manager.stripe.limits.charges', 8)
+            ]);
+
+            $data = compact('customer', 'subscriptions', 'invoices', 'upcoming', 'paymentMethods', 'charges', 'user');
+            return view('stripe-manager::customers.test', [ 'error' => null, 'data' => $data ]);
+
+        } catch (\Exception $e) {
+            return view('stripe-manager::customers.test', [
+                'error' => $e->getMessage(),
+                'data' => null,
+            ]);
         }
     }
 
