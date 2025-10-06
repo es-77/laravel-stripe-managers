@@ -255,10 +255,14 @@ class CustomerController extends Controller
                 'limit' => (int) config('stripe-manager.stripe.limits.charges', 8)
             ]);
 
-            $events = $client->events->all([
+            $eventParams = [
                 'limit' => (int) config('stripe-manager.stripe.limits.events', 20),
-                'type' => null,
-            ]);
+            ];
+            // Only include 'type' if explicitly provided via query (?event_type=...)
+            if ($request->filled('event_type')) {
+                $eventParams['type'] = $request->query('event_type');
+            }
+            $events = $client->events->all($eventParams);
 
             $data = compact('customer', 'subscriptions', 'invoices', 'upcoming', 'paymentMethods', 'charges', 'user', 'events');
             return view('stripe-manager::customers.test', [ 'error' => null, 'data' => $data ]);
