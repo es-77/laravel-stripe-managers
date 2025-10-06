@@ -81,7 +81,9 @@ class SubscriptionController extends Controller
             }
 
             // Create subscription using Stripe directly
-            $stripeSecret = config('stripe.secret') ?: config('cashier.secret');
+            $stripeSecret = config('stripe-manager.stripe.secret')
+                ?: config('stripe.secret')
+                ?: config('cashier.secret');
             
             if (!$stripeSecret) {
                 return back()->with('error', 'Stripe secret key not configured. Please check your .env file.')
@@ -152,7 +154,9 @@ class SubscriptionController extends Controller
      */
     public function syncAll()
     {
-        $stripeSecret = config('stripe.secret') ?: config('cashier.secret');
+        $stripeSecret = config('stripe-manager.stripe.secret')
+            ?: config('stripe.secret')
+            ?: config('cashier.secret');
         if (!$stripeSecret) {
             return back()->with('error', 'Stripe secret key not configured.');
         }
@@ -218,6 +222,9 @@ class SubscriptionController extends Controller
             if (!empty($skipped)) {
                 $message .= " Skipped " . count($skipped) . " subscriptions (no matching user).";
                 session()->flash('skipped_subscriptions', $skipped);
+            }
+            if ($synced === 0 && $updated === 0 && empty($skipped)) {
+                $message = 'No subscriptions found on Stripe.';
             }
             return redirect()->route('stripe-manager.subscriptions.index')->with('success', $message);
 
