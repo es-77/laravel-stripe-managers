@@ -147,6 +147,85 @@ class SubscriptionController extends Controller
         return view('stripe-manager::subscriptions.show', compact('subscription'));
     }
 
+    /**
+     * Sync all subscriptions from Stripe to local DB
+     */
+    public function syncAll()
+    {
+        $stripeSecret = config('stripe.secret') ?: config('cashier.secret');
+        if (!$stripeSecret) {
+            return back()->with('error', 'Stripe secret key not configured.');
+        }
+
+        $stripe = new \Stripe\StripeClient($stripeSecret);
+
+        $synced = 0;
+        $updated = 0;
+        $skipped = [];
+
+        try {
+            $startingAfter = null;
+            do {
+                $params = ['limit' => 100, 'expand' => ['data.items', 'data.items.data', 'data.default_payment_method']];
+                if ($startingAfter) $params['starting_after'] = $startingAfter;
+
+                $batch = $stripe->subscriptions->all($params);
+
+                foreach ($batch->data as $stripeSub) {
+                    $userModel = $this->getUserModel();
+                    $localUser = $userModel::where('stripe_id', $stripeSub->customer)->first();
+                    if (!$localUser) {
+                        $skipped[] = [
+                            'stripe_subscription_id' => $stripeSub->id,
+                            'reason' => 'No local user with stripe_id=' . $stripeSub->customer
+                        ];
+                        continue;
+                    }
+
+                    $localProduct = StripeProduct::where('stripe_id', optional($stripeSub->items->data[0])->price->product ?? null)->first();
+                    $localPricing = StripeProductPricing::where('stripe_price_id', optional($stripeSub->items->data[0])->price->id ?? null)->first();
+
+                    $payload = [
+                        'user_id' => $localUser->id,
+                        'product_id' => $localProduct?->id,
+                        'pricing_id' => $localPricing?->id,
+                        'stripe_subscription_id' => $stripeSub->id,
+                        'stripe_status' => $stripeSub->status,
+                        'current_period_start' => $stripeSub->current_period_start ? Carbon::createFromTimestamp($stripeSub->current_period_start) : null,
+                        'current_period_end' => $stripeSub->current_period_end ? Carbon::createFromTimestamp($stripeSub->current_period_end) : null,
+                        'trial_start' => $stripeSub->trial_start ? Carbon::createFromTimestamp($stripeSub->trial_start) : null,
+                        'trial_end' => $stripeSub->trial_end ? Carbon::createFromTimestamp($stripeSub->trial_end) : null,
+                        'canceled_at' => $stripeSub->canceled_at ? Carbon::createFromTimestamp($stripeSub->canceled_at) : null,
+                        'ends_at' => $stripeSub->cancel_at_period_end && $stripeSub->current_period_end ? Carbon::createFromTimestamp($stripeSub->current_period_end) : null,
+                        'quantity' => optional($stripeSub->items->data[0])->quantity ?? 1,
+                        'metadata' => $stripeSub->metadata ? $stripeSub->metadata->toArray() : [],
+                    ];
+
+                    $existing = StripeSubscription::where('stripe_subscription_id', $stripeSub->id)->first();
+                    if ($existing) {
+                        $existing->update($payload);
+                        $updated++;
+                    } else {
+                        StripeSubscription::create($payload);
+                        $synced++;
+                    }
+                }
+
+                $startingAfter = $batch->has_more ? end($batch->data)->id : null;
+            } while ($startingAfter);
+
+            $message = "Subscriptions sync completed: {$synced} added, {$updated} updated.";
+            if (!empty($skipped)) {
+                $message .= " Skipped " . count($skipped) . " subscriptions (no matching user).";
+                session()->flash('skipped_subscriptions', $skipped);
+            }
+            return redirect()->route('stripe-manager.subscriptions.index')->with('success', $message);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error syncing subscriptions: ' . $e->getMessage());
+        }
+    }
+
     public function cancel(StripeSubscription $subscription)
     {
         try {

@@ -5,13 +5,31 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-refresh me-2"></i>Subscriptions</h2>
-    <a href="{{ route('stripe-manager.subscriptions.create') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Create Subscription
-    </a>
+    <div>
+        <a href="{{ route('stripe-manager.subscriptions.sync') }}" class="btn btn-info me-2"
+           onclick="return confirm('Sync all subscriptions from Stripe into local DB?')">
+            <i class="fas fa-cloud-download-alt me-2"></i>Sync from Stripe
+        </a>
+        <a href="{{ route('stripe-manager.subscriptions.create') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create Subscription
+        </a>
+    </div>
 </div>
 
 <div class="card">
     <div class="card-body">
+        @if(session('skipped_subscriptions'))
+            <div class="alert alert-warning">
+                <strong>Skipped {{ count(session('skipped_subscriptions')) }} subscriptions</strong>
+                <ul class="mb-0 mt-2 small">
+                    @foreach(session('skipped_subscriptions') as $item)
+                        <li>
+                            <code>{{ $item['stripe_subscription_id'] }}</code> - {{ $item['reason'] }}
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         @if($subscriptions->count() > 0)
             <div class="table-responsive">
                 <table class="table table-hover">

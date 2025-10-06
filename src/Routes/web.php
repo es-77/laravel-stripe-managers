@@ -79,6 +79,10 @@ Route::group([
             'show' => 'stripe-manager.subscriptions.show',
         ]);
 
+    // Subscriptions sync route
+    Route::get('subscriptions-sync', [SubscriptionController::class, 'syncAll'])
+        ->name('stripe-manager.subscriptions.sync');
+
     Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel'])
         ->name('stripe-manager.subscriptions.cancel');
     Route::post('subscriptions/{subscription}/resume', [SubscriptionController::class, 'resume'])
