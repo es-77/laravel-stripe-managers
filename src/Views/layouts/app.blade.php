@@ -7,6 +7,24 @@
     <title>@yield('title', 'Stripe Manager')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://js.stripe.com/v3"></script>
+    <script>
+        window.STRIPE_PUBLISHABLE_KEY = "{{ config('stripe.key') ?: config('cashier.key') }}";
+        // Global Stripe readiness helper for all pages
+        (function(){
+            function announceReady(){
+                try { document.dispatchEvent(new CustomEvent('stripe:ready')); } catch(_) {}
+            }
+            if (typeof Stripe === 'undefined') {
+                var script = document.createElement('script');
+                script.src = 'https://js.stripe.com/v3';
+                script.onload = announceReady;
+                document.head.appendChild(script);
+            } else {
+                announceReady();
+            }
+        })();
+    </script>
     <style>
         :root{
             --sm-bg: #0d1117;
@@ -96,26 +114,5 @@
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://js.stripe.com/v3"></script>
-    <script>
-        window.STRIPE_PUBLISHABLE_KEY = "{{ config('stripe.key') ?: config('cashier.key') }}";
-        
-        // Ensure Stripe is loaded before any page scripts run
-        window.addEventListener('load', function() {
-            if (typeof Stripe === 'undefined') {
-                console.error('Failed to load Stripe.js. Please check your internet connection.');
-                // Try to reload Stripe script
-                const script = document.createElement('script');
-                script.src = 'https://js.stripe.com/v3';
-                script.onload = function() {
-                    console.log('Stripe.js loaded successfully on retry');
-                };
-                script.onerror = function() {
-                    console.error('Failed to load Stripe.js on retry');
-                };
-                document.head.appendChild(script);
-            }
-        });
-    </script>
 </body>
 </html>
