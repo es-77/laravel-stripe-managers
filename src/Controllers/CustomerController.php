@@ -32,13 +32,16 @@ class CustomerController extends Controller
         $query = request('q');
         $perPage = (int) (request('per_page') ?: 15);
 
+        $nameCol = config('stripe-manager.user.columns.name', 'name');
+        $emailCol = config('stripe-manager.user.columns.email', 'email');
+
         $customers = $this->getUserModel()::query()
-            ->select(['id','name','email','stripe_id','created_at'])
+            ->select(['id', $nameCol . ' as name', $emailCol . ' as email', 'stripe_id', 'created_at'])
             ->whereNotNull('stripe_id')
             ->when($query, function ($builder) use ($query) {
                 $builder->where(function ($q) use ($query) {
-                    $q->where('email', 'like', "%{$query}%")
-                      ->orWhere('name', 'like', "%{$query}%");
+                    $q->where(config('stripe-manager.user.columns.email', 'email'), 'like', "%{$query}%")
+                      ->orWhere(config('stripe-manager.user.columns.name', 'name'), 'like', "%{$query}%");
                 });
             })
             ->with(['subscriptions' => function ($q) { $q->select('id','user_id'); }])

@@ -20,6 +20,16 @@ return [
             'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
         ],
     ],
+
+    // User model column mapping for search/listing
+    'user' => [
+        'columns' => [
+            // Underlying DB column that represents the user's display name
+            'name' => env('STRIPE_USER_NAME_COLUMN', 'name'),
+            // Underlying DB column that represents the user's email
+            'email' => env('STRIPE_USER_EMAIL_COLUMN', 'email'),
+        ],
+    ],
     
     'currency' => env('CASHIER_CURRENCY', 'usd'),
     
