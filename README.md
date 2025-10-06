@@ -86,6 +86,7 @@ All routes require authentication. Make sure users are logged in before accessin
 - ✅ **Product Management**: Create and manage Stripe products with multiple pricing tiers
 - ✅ **Pricing Management**: Assign and manage product pricing with recurring/one-time options
 - ✅ **Subscription Management**: Create, update, cancel, and resume subscriptions
+- ✅ **No Repeat Trial**: Re-subscribing to the same plan skips free trial and charges immediately
 - ✅ **Webhook Handler**: Handle Stripe webhooks for payment events
 - ✅ **Web Interface**: Complete UI for managing all Stripe resources
 - ✅ **Payment Tracking**: Store and track subscription payments locally
@@ -94,6 +95,135 @@ All routes require authentication. Make sure users are logged in before accessin
 - ✅ **Subscriptions Sync**: One-click sync of existing Stripe subscriptions into local DB, with skip report
 - ✅ **Stripe Testing Panel**: Inspect Stripe customer, subs, invoices, PMs, next invoice, and recent charges
 - ✅ **Polished UI**: Bootstrap 5 styling with a cohesive dark theme and improved pagination
+
+## 🔌 API (Optional)
+
+The package exposes a minimal REST API for integrating your frontend or other services. The base path and middleware are configurable.
+
+### Configure
+
+In `config/stripe-manager.php`:
+
+```php
+'api_routes' => [
+    'prefix' => 'api/stripe-manager',
+    'middleware' => ['api'], // e.g. ['api','auth:sanctum']
+],
+```
+
+Base URL: `{APP_URL}/{prefix}` (default: `/api/stripe-manager`)
+
+### Endpoints
+
+1) GET {prefix}/plans
+- Returns active products with active pricing from local DB (not Stripe).
+
+Response
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Pro",
+      "description": "...",
+      "stripe_product_id": "prod_...",
+      "pricing": [
+        {
+          "id": 10,
+          "stripe_price_id": "price_...",
+          "nickname": "Monthly",
+          "unit_amount": 1999,
+          "currency": "usd",
+          "type": "recurring",
+          "billing_period": "month",
+          "billing_period_count": 1,
+          "trial_period_days": 14
+        }
+      ]
+    }
+  ]
+}
+```
+
+2) GET {prefix}/users/{userId}/subscription
+- Returns latest subscription summary for a user (local DB), including next billing date and amount when available.
+
+Response
+```json
+{
+  "data": {
+    "subscription_id": 5,
+    "stripe_subscription_id": "sub_...",
+    "status": "active",
+    "product": "Pro",
+    "price": {
+      "nickname": "Monthly",
+      "unit_amount": 1999,
+      "currency": "usd",
+      "billing_period": "month",
+      "billing_period_count": 1
+    },
+    "current_period_start": "2025-10-01 12:00:00",
+    "current_period_end": "2025-11-01 12:00:00",
+    "next_billing_at": "2025-11-01 12:00:00",
+    "next_billing_amount": 1999
+  }
+}
+```
+
+3) POST {prefix}/select-subscription-plan
+- Create subscription for user with optional payment method.
+
+Body
+```json
+{
+  "user_id": 123,
+  "pricing_id": 10,
+  "payment_method": "pm_123" // optional
+}
+```
+Response
+```json
+{ "data": { "id": 5 } }
+```
+
+Behavior
+- No repeat trial: if the user previously subscribed to the same pricing, the trial is skipped and the user is charged immediately.
+
+4) GET {prefix}/trial-info?user_id=123
+- Returns latest trial info (if any) for the user.
+
+5) DELETE {prefix}/cancel-subscription-plan
+- Cancels the current subscription. Optional `immediately=true` charges behavior is respected by service.
+
+Body
+```json
+{ "user_id": 123, "immediately": false }
+```
+
+6) GET {prefix}/user-payment-methods?user_id=123
+- Lists card payment methods from Stripe for the user.
+
+7) POST {prefix}/save-stripe-id
+- Saves a known Stripe customer id on the user.
+
+Body
+```json
+{ "user_id": 123, "stripe_id": "cus_..." }
+```
+
+8) POST {prefix}/set-default-payment-method
+- Sets the user’s default payment method on Stripe.
+
+Body
+```json
+{ "user_id": 123, "payment_method_id": "pm_..." }
+```
+
+### Notes
+- Secure these endpoints by adding your preferred auth middleware (e.g. Sanctum) in `api_routes.middleware`.
+- Amounts are in the smallest currency unit (e.g., cents).
+- Trials are enforced locally and verified with Stripe when possible to prevent re-trial abuse.
 
 ## 💻 Programmatic Usage
 

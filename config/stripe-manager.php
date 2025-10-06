@@ -39,4 +39,11 @@ return [
         'prefix' => 'stripe-manager',
         'middleware' => ['web', 'auth'],
     ]
+    ,
+    // API routes configuration
+    'api_routes' => [
+        'prefix' => 'api/stripe-manager',
+        // Change to your preferred guard/middleware
+        'middleware' => ['api'],
+    ],
 ];

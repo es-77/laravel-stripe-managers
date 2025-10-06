@@ -44,6 +44,54 @@ class SubscriptionService
     }
 
     /**
+     * Decide if a user should be charged immediately when (re)subscribing to a pricing plan.
+     * We skip free trials if the user has ever taken this same pricing before (to avoid abuse),
+     * regardless of whether the previous trial completed fully or was canceled early.
+     */
+    private function shouldChargeImmediatelyForPricing($user, StripeProductPricing $pricing): bool
+    {
+        try {
+            $prior = StripeSubscription::where('user_id', $user->id)
+                ->where('pricing_id', $pricing->id)
+                ->orderByDesc('created_at')
+                ->first();
+
+            if (! $prior) {
+                return false; // no prior subscription – allow trial
+            }
+
+            // If there was any prior subscription for this pricing, treat the trial as consumed
+            $trialConsumed = true;
+
+            // Optional confirmation with Stripe if we have a remote id
+            if (!empty($prior->stripe_subscription_id)) {
+                try {
+                    $this->ensureApiKey();
+                    $details = Subscription::retrieve($prior->stripe_subscription_id);
+                    if (!empty($details->trial_start) || !empty($details->trial_end)) {
+                        $trialConsumed = true;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Unable to confirm trial info from Stripe; proceeding with local decision', [
+                        'user_id' => $user->id,
+                        'stripe_subscription_id' => $prior->stripe_subscription_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return $trialConsumed;
+        } catch (\Exception $e) {
+            Log::error('Failed determining if should charge immediately for pricing', [
+                'user_id' => $user->id,
+                'pricing_id' => $pricing->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false; // fail-open to preserving trial; safer to not surprise-charge
+        }
+    }
+
+    /**
      * Create a subscription for a customer
      */
     public function createSubscription($user, StripeProductPricing $pricing, array $options = []): StripeSubscription
@@ -62,11 +110,16 @@ class SubscriptionService
                 'expand' => ['latest_invoice.payment_intent'],
             ];
 
-            // Add trial period if specified
-            if (isset($options['trial_days']) && $options['trial_days'] > 0) {
-                $subscriptionData['trial_period_days'] = $options['trial_days'];
-            } elseif ($pricing->trial_period_days) {
-                $subscriptionData['trial_period_days'] = $pricing->trial_period_days;
+            // Determine whether to skip trial based on prior usage for this pricing
+            $forceCharge = $this->shouldChargeImmediatelyForPricing($user, $pricing);
+
+            // Only include trial days if we are NOT forcing immediate charge
+            if (! $forceCharge) {
+                if (isset($options['trial_days']) && $options['trial_days'] > 0) {
+                    $subscriptionData['trial_period_days'] = $options['trial_days'];
+                } elseif ($pricing->trial_period_days) {
+                    $subscriptionData['trial_period_days'] = $pricing->trial_period_days;
+                }
             }
 
             // Add payment method if specified

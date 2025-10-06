@@ -8,6 +8,7 @@ use EmmanuelSaleem\LaravelStripeManager\Controllers\SubscriptionController;
 use EmmanuelSaleem\LaravelStripeManager\Controllers\WebhookController;
 
 $config = config('stripe-manager.routes');
+$apiConfig = config('stripe-manager.api_routes');
 
 Route::group([
     'prefix' => $config['prefix'],
@@ -105,4 +106,27 @@ Route::group([
     // Stripe testing panel
     Route::get('testing/stripe', [CustomerController::class, 'stripeTest'])
         ->name('stripe-manager.testing.stripe');
+});
+
+// API routes
+Route::group([
+    'prefix' => $apiConfig['prefix'] ?? 'api/stripe-manager',
+    'middleware' => $apiConfig['middleware'] ?? ['api']
+], function () {
+    Route::get('plans', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'plans'])
+        ->name('stripe-manager.api.plans');
+    Route::get('users/{user}/subscription', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'userSubscription'])
+        ->name('stripe-manager.api.user-subscription');
+    Route::post('select-subscription-plan', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'selectSubscriptionPlan'])
+        ->name('stripe-manager.api.select-subscription');
+    Route::get('trial-info', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'trialInfo'])
+        ->name('stripe-manager.api.trial-info');
+    Route::delete('cancel-subscription-plan', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'cancelSubscriptionPlan'])
+        ->name('stripe-manager.api.cancel-subscription');
+    Route::get('user-payment-methods', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'userPaymentMethods'])
+        ->name('stripe-manager.api.user-payment-methods');
+    Route::post('save-stripe-id', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'saveStripeId'])
+        ->name('stripe-manager.api.save-stripe-id');
+    Route::post('set-default-payment-method', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'setDefaultPaymentMethod'])
+        ->name('stripe-manager.api.set-default-payment-method');
 });
