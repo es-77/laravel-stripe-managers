@@ -123,6 +123,37 @@
         </div>
     </div>
 </div>
+<div class="card mt-4">
+    <div class="card-header section-title">Stripe Logs (Events)</div>
+    <div class="card-body">
+        @if(!empty($data['events']))
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Event</th>
+                            <th>Type</th>
+                            <th>Object</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($data['events']->data as $event)
+                            <tr>
+                                <td>{{ date('M j, Y g:i A', $event->created) }}</td>
+                                <td><code>{{ $event->id }}</code></td>
+                                <td>{{ $event->type }}</td>
+                                <td>{{ $event->data->object->object ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="text-muted">No events available.</div>
+        @endif
+    </div>
+</div>
 @endif
 @endsection
 

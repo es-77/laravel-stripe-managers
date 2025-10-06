@@ -10,6 +10,7 @@ return [
             'subscriptions' => env('STRIPE_LIST_LIMIT_SUBSCRIPTIONS', 10),
             'invoices' => env('STRIPE_LIST_LIMIT_INVOICES', 10),
             'charges' => env('STRIPE_LIST_LIMIT_CHARGES', 8),
+            'events' => env('STRIPE_LIST_LIMIT_EVENTS', 20),
         ],
         'webhook' => [
             'secret' => env('STRIPE_WEBHOOK_SECRET'),
