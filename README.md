@@ -72,6 +72,8 @@ http://yourdomain.com/stripe-manager
 - **Products**: `/stripe-manager/products` - Manage products and pricing
 - **Customers**: `/stripe-manager/customers` - Manage customers and payment methods
 - **Subscriptions**: `/stripe-manager/subscriptions` - Manage subscriptions
+- **Subscriptions Sync**: `/stripe-manager/subscriptions-sync` - Import existing Stripe subscriptions
+- **Stripe Testing**: `/stripe-manager/testing/stripe` - Inspect Stripe customer data
 - **Webhooks**: `/stripe-manager/webhooks` - Webhook management and logs
 
 ### Authentication Required
@@ -87,6 +89,11 @@ All routes require authentication. Make sure users are logged in before accessin
 - ✅ **Webhook Handler**: Handle Stripe webhooks for payment events
 - ✅ **Web Interface**: Complete UI for managing all Stripe resources
 - ✅ **Payment Tracking**: Store and track subscription payments locally
+- ✅ **Multiple Payment Methods**: Add, list, set default, and delete cards per customer
+- ✅ **Product Ordering**: Drag-and-drop product ordering saved via `display_order`
+- ✅ **Subscriptions Sync**: One-click sync of existing Stripe subscriptions into local DB, with skip report
+- ✅ **Stripe Testing Panel**: Inspect Stripe customer, subs, invoices, PMs, next invoice, and recent charges
+- ✅ **Polished UI**: Bootstrap 5 styling with a cohesive dark theme and improved pagination
 
 ## 💻 Programmatic Usage
 
@@ -179,6 +186,9 @@ The package creates the following tables:
 - `em_stripe_subscriptions` - Stores subscription data
 - `em_subscription_payments` - Tracks payment history
 - `em_stripe_cards` - Stores customer payment methods
+  
+Additional columns:
+- `em_stripe_products.display_order` (uint, indexed) - for custom ordering
 
 ## 🧪 Testing
 
@@ -247,6 +257,26 @@ For support, please:
 - Create an issue on the [GitHub repository](https://github.com/emmanuelsaleem/laravel-stripe-manager/issues)
 - Contact [emmanuelsaleem098765@gmail.com](mailto:emmanuelsaleem098765@gmail.com)
 - Connect on [LinkedIn](http://linkedin.com/in/es77)
+
+## ⚙️ Advanced Configuration
+
+Optional limits for Stripe API fetches (used by the testing panel):
+
+```env
+# Optional overrides (defaults shown)
+STRIPE_LIST_LIMIT_SUBSCRIPTIONS=10
+STRIPE_LIST_LIMIT_INVOICES=10
+STRIPE_LIST_LIMIT_CHARGES=8
+```
+
+These map to `config/stripe-manager.php` under `stripe.limits`.
+
+## 🎛 Usage Tips
+
+- Customer create page supports search + pagination for large user sets
+- Manage multiple cards on a customer’s detail page (add, default, delete)
+- Drag-and-drop products on the products list to reorder
+- Run Subscriptions Sync to import historical data; skipped subscriptions (no matching local user) are shown with reasons
 
 ## 📝 Changelog
 
