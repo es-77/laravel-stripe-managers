@@ -4,9 +4,20 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-users me-2"></i>Customers</h2>
-    <a href="{{ route('stripe-manager.customers.create') }}" class="btn btn-primary">
-        <i class="fas fa-user-plus me-2"></i>Add Customer
-    </a>
+    <div class="d-flex gap-2">
+        <form method="GET" action="{{ route('stripe-manager.customers.index') }}" class="d-flex gap-2">
+            <input type="text" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Search by email or name" />
+            <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                @foreach([10,15,25,50] as $size)
+                    <option value="{{ $size }}" {{ (int)request('per_page', 15) === $size ? 'selected' : '' }}>{{ $size }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Search</button>
+        </form>
+        <a href="{{ route('stripe-manager.customers.create') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus me-2"></i>Add Customer
+        </a>
+    </div>
 </div>
 
 <div class="card">

@@ -29,8 +29,24 @@ class CustomerController extends Controller
 
     public function index()
     {
-        $customers = $this->getUserModel()::whereNotNull('stripe_id')->with('subscriptions')->paginate(15);
-        return view('stripe-manager::customers.index', compact('customers'));
+        $query = request('q');
+        $perPage = (int) (request('per_page') ?: 15);
+
+        $customers = $this->getUserModel()::query()
+            ->select(['id','name','email','stripe_id','created_at'])
+            ->whereNotNull('stripe_id')
+            ->when($query, function ($builder) use ($query) {
+                $builder->where(function ($q) use ($query) {
+                    $q->where('email', 'like', "%{$query}%")
+                      ->orWhere('name', 'like', "%{$query}%");
+                });
+            })
+            ->with(['subscriptions' => function ($q) { $q->select('id','user_id'); }])
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('stripe-manager::customers.index', compact('customers','query','perPage'));
     }
 
     public function show($customer)
