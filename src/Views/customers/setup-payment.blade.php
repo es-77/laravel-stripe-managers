@@ -41,76 +41,75 @@
 </div>
 
 <script>
-function initSetupPayment() {
-    if (typeof Stripe === 'undefined') {
-        return false;
+const stripe = Stripe('{{ config('cashier.key') }}');
+const elements = stripe.elements();
+
+// Create an instance of the card Element
+const cardElement = elements.create('card', {
+    style: {
+        base: {
+            fontSize: '16px',
+            color: '#424770',
+            '::placeholder': {
+                color: '#aab7c4',
+            },
+        },
+    },
+});
+
+// Add an instance of the card Element into the `card-element` <div>
+cardElement.mount('#card-element');
+
+// Handle real-time validation errors from the card Element
+cardElement.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+        displayError.textContent = event.error.message;
+    } else {
+        displayError.textContent = '';
     }
-    if (!window.STRIPE_PUBLISHABLE_KEY) {
-        document.getElementById('card-errors').textContent = 'Stripe publishable key is not configured.';
-        return true; // do not keep polling
-    }
+});
 
-    try {
-        const stripe = Stripe(window.STRIPE_PUBLISHABLE_KEY);
-        const elements = stripe.elements();
-        const cardElement = elements.create('card', { style: { base: { fontSize: '16px' } } });
-        cardElement.mount('#card-element');
-        cardElement.on('change', function(event) {
-            const displayError = document.getElementById('card-errors');
-            displayError.textContent = event.error ? event.error.message : '';
-        });
-
-        const form = document.getElementById('payment-form');
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const submitButton = document.getElementById('submit-button');
-            const buttonText = document.getElementById('button-text');
-            const spinner = document.getElementById('spinner');
-            submitButton.disabled = true;
-            buttonText.style.display = 'none';
-            spinner.style.display = 'inline-block';
-
-            const {setupIntent, error} = await stripe.confirmCardSetup(
-                '{{ $intent->client_secret }}',
-                {
-                    payment_method: {
-                        card: cardElement,
-                        billing_details: {
-                            name: '{{ $customer->name }}',
-                            email: '{{ $customer->email }}',
-                        }
-                    }
+// Handle form submission
+const form = document.getElementById('payment-form');
+form.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    
+    const submitButton = document.getElementById('submit-button');
+    const buttonText = document.getElementById('button-text');
+    const spinner = document.getElementById('spinner');
+    
+    // Disable submit button and show loading
+    submitButton.disabled = true;
+    buttonText.style.display = 'none';
+    spinner.style.display = 'inline-block';
+    
+    const {setupIntent, error} = await stripe.confirmCardSetup(
+        '{{ $intent->client_secret }}',
+        {
+            payment_method: {
+                card: cardElement,
+                billing_details: {
+                    name: '{{ $customer->name }}',
+                    email: '{{ $customer->email }}',
                 }
-            );
-
-            if (error) {
-                document.getElementById('card-errors').textContent = error.message;
-                submitButton.disabled = false;
-                buttonText.style.display = 'inline';
-                spinner.style.display = 'none';
-            } else {
-                window.location.href = '{{ route('stripe-manager.customers.show', $customer) }}';
             }
-        });
-        return true;
-    } catch (e) {
-        document.getElementById('card-errors').textContent = 'Error initializing Stripe: ' + (e.message || e);
-        return true;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    if (initSetupPayment()) return;
-    // If not ready yet, wait for the global event triggered by layout
-    const readyOnce = function(){ initSetupPayment(); document.removeEventListener('stripe:ready', readyOnce); };
-    document.addEventListener('stripe:ready', readyOnce);
-    // Safety timeout
-    setTimeout(function(){
-        document.removeEventListener('stripe:ready', readyOnce);
-        if (typeof Stripe === 'undefined') {
-            document.getElementById('card-errors').textContent = 'Stripe failed to load. Please refresh the page.';
         }
-    }, 10000);
+    );
+    
+    if (error) {
+        // Show error to customer
+        const errorElement = document.getElementById('card-errors');
+        errorElement.textContent = error.message;
+        
+        // Re-enable submit button
+        submitButton.disabled = false;
+        buttonText.style.display = 'inline';
+        spinner.style.display = 'none';
+    } else {
+        // Success! Payment method saved.
+        window.location.href = '{{ route('stripe-manager.customers.show', $customer) }}';
+    }
 });
 </script>
 @endsection
