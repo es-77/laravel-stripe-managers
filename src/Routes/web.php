@@ -32,6 +32,8 @@ Route::group([
     
     // Product sync route
     Route::get('products-sync', [ProductController::class, 'sync'])->name('stripe-manager.products.sync');
+    // Product ordering
+    Route::post('products/reorder', [ProductController::class, 'reorder'])->name('stripe-manager.products.reorder');
     
     // Product pricing routes
     Route::get('products/{product}/pricing/create', [ProductController::class, 'createPricing'])

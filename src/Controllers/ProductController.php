@@ -20,7 +20,10 @@ class ProductController extends Controller
 
     public function index()
     {
-        $products = StripeProduct::with('pricing')->paginate(10);
+        $products = StripeProduct::with('pricing')
+            ->orderByDesc('display_order')
+            ->orderBy('name')
+            ->paginate(10);
         return view('stripe-manager::products.index', compact('products'));
     }
 
@@ -152,6 +155,21 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Error archiving product: ' . $e->getMessage());
         }
+    }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'orders' => 'required|array',
+            'orders.*.id' => 'required|exists:em_stripe_products,id',
+            'orders.*.order' => 'required|integer',
+        ]);
+
+        foreach ($request->orders as $item) {
+            StripeProduct::where('id', $item['id'])->update(['display_order' => $item['order']]);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     /**

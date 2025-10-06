@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->boolean('active')->default(true);
+            $table->unsignedInteger('display_order')->default(0)->index();
             $table->json('metadata')->nullable();
             $table->timestamps();
         });

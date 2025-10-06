@@ -14,6 +14,7 @@ class StripeProduct extends Model
         'name',
         'description',
         'active',
+        'display_order',
         'metadata'
     ];
 

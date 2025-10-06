@@ -21,9 +21,10 @@
     <div class="card-body">
         @if($products->count() > 0)
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="products-table">
                     <thead>
                         <tr>
+                            <th style="width:42px"></th>
                             <th>Name</th>
                             <th>Description</th>
                             <th>Pricing</th>
@@ -34,7 +35,8 @@
                     </thead>
                     <tbody>
                         @foreach($products as $product)
-                            <tr>
+                            <tr data-id="{{ $product->id }}">
+                                <td class="text-muted"><i class="fas fa-grip-vertical"></i></td>
                                 <td>
                                     <strong>{{ $product->name }}</strong><br>
                                     <small class="text-muted">{{ $product->stripe_id }}</small>
@@ -94,5 +96,41 @@
         @endif
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('products-table');
+    if (!table) return;
+
+    let draggingRow = null;
+    table.querySelectorAll('tbody tr').forEach(row => {
+        row.draggable = true;
+        row.addEventListener('dragstart', () => draggingRow = row);
+        row.addEventListener('dragover', e => {
+            e.preventDefault();
+            const target = e.currentTarget;
+            const bounding = target.getBoundingClientRect();
+            const offset = bounding.y + (bounding.height / 2);
+            const parent = target.parentNode;
+            if (e.clientY - offset > 0) parent.insertBefore(draggingRow, target.nextSibling);
+            else parent.insertBefore(draggingRow, target);
+        });
+    });
+
+    table.addEventListener('drop', async () => {
+        const orders = Array.from(table.querySelectorAll('tbody tr')).map((tr, index) => ({ id: tr.dataset.id, order: (table.rows.length - index) }));
+        try {
+            const resp = await fetch("{{ route('stripe-manager.products.reorder') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content') },
+                body: JSON.stringify({ orders })
+            });
+            if (!resp.ok) throw new Error('Failed to save order');
+        } catch (e) {
+            alert('Could not save new order.');
+        }
+    });
+});
+</script>
 @endsection
 
