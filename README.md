@@ -100,6 +100,12 @@ All routes require authentication. Make sure users are logged in before accessin
 
 The package exposes a minimal REST API for integrating your frontend or other services. The base path and middleware are configurable.
 
+### API Documentation
+
+Explore and test the REST API using the Postman documentation:
+
+- Postman Docs: [https://documenter.getpostman.com/view/21481838/2sB3QJNAb4](https://documenter.getpostman.com/view/21481838/2sB3QJNAb4)
+
 ### Configure
 
 In `config/stripe-manager.php`:

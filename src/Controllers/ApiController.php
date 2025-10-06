@@ -23,26 +23,31 @@ class ApiController extends Controller
     }
 
     // GET /api/stripe-manager/users/{user}/subscription
-    public function userSubscription($userId)
+    public function userSubscription(Request $request)
     {
-        $data = $this->api->getUserSubscriptionSummary((int) $userId);
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $data = $this->api->getUserSubscriptionSummary((int) $user->id);
         return response()->json(['data' => !empty($data) ? $data : null]);
     }
 
     // POST /select-subscription-plan
     public function selectSubscriptionPlan(Request $request)
     {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
         $validated = $request->validate([
-            'user_id' => 'required|integer',
-            'pricing_id' => 'required|integer|exists:em_stripe_product_pricing,id',
-            'payment_method' => 'nullable|string',
+            'plan_id' => 'required|integer|exists:em_stripe_product_pricing,id',
+            'payment_method_id' => 'required|string',
         ]);
         $service = app(\EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService::class);
-        $userModel = app(config('stripe-manager.stripe.model'));
-        $user = $userModel::findOrFail($validated['user_id']);
-        $pricing = \EmmanuelSaleem\LaravelStripeManager\Models\StripeProductPricing::findOrFail($validated['pricing_id']);
+        $pricing = \EmmanuelSaleem\LaravelStripeManager\Models\StripeProductPricing::findOrFail($validated['plan_id']);
         $subscription = $service->createSubscription($user, $pricing, [
-            'payment_method' => $request->input('payment_method')
+            'payment_method' => $validated['payment_method_id']
         ]);
         return response()->json(['data' => ['id' => $subscription->id]], 201);
     }
@@ -58,35 +63,47 @@ class ApiController extends Controller
     // DELETE /cancel-subscription-plan
     public function cancelSubscriptionPlan(Request $request)
     {
-        $request->validate(['user_id' => 'required|integer', 'immediately' => 'sometimes|boolean']);
-        $ok = app(ApiService::class)->cancelSubscriptionPlan((int) $request->user_id, $request->boolean('immediately', false));
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $request->validate(['immediately' => 'sometimes|boolean']);
+        $ok = app(ApiService::class)->cancelSubscriptionPlan((int) $user->id, $request->boolean('immediately', false));
         return response()->json(['ok' => $ok]);
     }
 
     // GET /user-payment-methods
     public function userPaymentMethods(Request $request)
     {
-        $request->validate(['user_id' => 'required|integer']);
-        $list = app(ApiService::class)->listUserPaymentMethods((int) $request->user_id);
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $list = app(ApiService::class)->listUserPaymentMethods((int) $user->id);
         return response()->json(['data' => $list]);
     }
 
     // POST /save-stripe-id
     public function saveStripeId(Request $request)
     {
-        $request->validate(['user_id' => 'required|integer', 'stripe_id' => 'required|string']);
-        $ok = app(ApiService::class)->saveStripeId((int) $request->user_id, $request->stripe_id);
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $request->validate(['stripe_id' => 'required|string']);
+        $ok = app(ApiService::class)->saveStripeId((int) $user->id, $request->stripe_id);
         return response()->json(['ok' => $ok]);
     }
 
     // POST /set-default-payment-method
     public function setDefaultPaymentMethod(Request $request)
     {
-        $request->validate([
-            'user_id' => 'required|integer',
-            'payment_method_id' => 'required|string'
-        ]);
-        $ok = app(ApiService::class)->setDefaultPaymentMethod((int) $request->user_id, $request->payment_method_id);
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $request->validate(['payment_method_id' => 'required|string']);
+        $ok = app(ApiService::class)->setDefaultPaymentMethod((int) $user->id, $request->payment_method_id);
         return response()->json(['ok' => $ok]);
     }
 }

@@ -115,7 +115,7 @@ Route::group([
 ], function () {
     Route::get('plans', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'plans'])
         ->name('stripe-manager.api.plans');
-    Route::get('users/{user}/subscription', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'userSubscription'])
+    Route::get('subscription', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'userSubscription'])
         ->name('stripe-manager.api.user-subscription');
     Route::post('select-subscription-plan', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'selectSubscriptionPlan'])
         ->name('stripe-manager.api.select-subscription');
