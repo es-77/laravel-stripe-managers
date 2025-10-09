@@ -108,13 +108,19 @@ Route::group([
         ->name('stripe-manager.testing.stripe');
 });
 
+// API public only routes
+Route::group([
+    'prefix' => $apiConfig['prefix'] ?? 'api/stripe-manager',
+], function () {
+    Route::get('plans', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'plans'])
+        ->name('stripe-manager.api.plans');
+});
+
 // API routes
 Route::group([
     'prefix' => $apiConfig['prefix'] ?? 'api/stripe-manager',
     'middleware' => $apiConfig['middleware'] ?? ['api']
 ], function () {
-    Route::get('plans', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'plans'])
-        ->name('stripe-manager.api.plans');
     Route::get('subscription', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'userSubscription'])
         ->name('stripe-manager.api.user-subscription');
     Route::post('select-subscription-plan', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'selectSubscriptionPlan'])

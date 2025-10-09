@@ -26,7 +26,7 @@ class ApiController extends Controller
             'message' => $message,
             'errors' => [],
             'data' => $data,
-        ], $code);
+        ], $code)->header('Content-Type', 'application/json');
     }
 
     protected function errorResponse(string $message, int $code = 400, array $errors = [])
@@ -38,7 +38,7 @@ class ApiController extends Controller
             'message' => $message,
             'errors' => $errors,
             'data' => null,
-        ], $code);
+        ], $code)->header('Content-Type', 'application/json');
     }
 
     // GET /api/stripe-manager/plans
