@@ -3,11 +3,16 @@
     "description": "Complete Laravel Stripe management package with UI for customers, products, subscriptions and payments",
     "type": "library",
     "license": "MIT",
-    "keywords": ["laravel", "stripe", "subscriptions", "payments", "billing", "saas"],
-    "homepage": "https://github.com/emmanuelsaleem/laravel-stripe-manager",
+    "keywords": ["laravel", "stripe", "subscriptions", "payments", "billing", "saas", "subscription-management"],
+    "homepage": "https://github.com/es-77/laravel-stripe-managers",
     "support": {
         "email": "emmanuelsaleem098765@gmail.com",
-        "source": "https://github.com/emmanuelsaleem/laravel-stripe-manager"
+        "source": "https://github.com/es-77/laravel-stripe-managers",
+        "issues": "https://github.com/es-77/laravel-stripe-managers/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/es-77/laravel-stripe-managers.git"
     },
     "authors": [
         {
@@ -22,6 +27,13 @@
         "stripe/stripe-php": "^10.0|^11.0|^12.0|^13.0|^14.0|^15.0|^16.0",
         "illuminate/support": "^9.0|^10.0|^11.0"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5|^10.0"
+    },
+    "suggest": {
+        "laravel/sanctum": "For API authentication when using the package's API routes",
+        "beyondcode/laravel-websockets": "For real-time webhook processing"
+    },
     "minimum-stability": "dev",
     "prefer-stable": true,
     "autoload": {
@@ -35,5 +47,9 @@
                 "EmmanuelSaleem\\LaravelStripeManager\\StripeManagerServiceProvider"
             ]
         }
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
     }
 }
