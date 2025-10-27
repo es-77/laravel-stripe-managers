@@ -18,12 +18,17 @@ Then install the package:
 composer require emmanuelsaleem/laravel-stripe-manager
 ```
 
+For a specific version:
+```bash
+composer require emmanuelsaleem/laravel-stripe-manager:^1.0.1
+```
+
 For the latest development version:
 ```bash
 composer require emmanuelsaleem/laravel-stripe-manager:dev-master --ignore-platform-reqs
 ```
 
-> **Note:** After installation, if this is your first time using the package, you'll need to follow the remaining steps below.
+> **Important:** The migration will automatically add a `stripe_id` column to your `users` table if it doesn't already exist. No additional User model setup is required!
 
 2. **Install required dependencies:**
 ```bash
@@ -47,9 +52,6 @@ php artisan vendor:publish --provider="EmmanuelSaleem\LaravelStripeManager\Strip
 ```
 
 
-**Note:** The migration will automatically add a `stripe_id` column to your `users` table if it doesn't already exist.
-
-
 ### Configuration
 
 1. **Add Stripe credentials to your `.env` file:**
@@ -60,23 +62,6 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 CASHIER_CURRENCY=usd
 ```
 
-2. **Update your User model to use Cashier and Stripe Manager:**
-```php
-// In your User model
-use Laravel\Cashier\Billable;
-use EmmanuelSaleem\LaravelStripeManager\Traits\HasStripeId;
-
-class User extends Authenticatable
-{
-    use Billable, HasStripeId;
-}
-```
-
-**Note:** The `HasStripeId` trait is **optional** but recommended. It provides helpful methods for checking if a user has a Stripe customer ID:
-- `hasStripeId()` - Check if user has a Stripe ID
-- `getStripeId()` - Get the user's Stripe ID
-
-If you prefer not to use the trait, the package will work by directly checking the `stripe_id` property on your User model. The package will automatically create a Stripe customer when needed.
 
 ## 🌐 Web Interface Access
 
