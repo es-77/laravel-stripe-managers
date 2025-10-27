@@ -104,6 +104,9 @@
                     <a class="nav-link {{ request()->routeIs('stripe-manager.testing.stripe') ? 'active' : '' }}" href="{{ route('stripe-manager.testing.stripe') }}">
                         <i class="fas fa-flask me-2"></i>Stripe Testing
                     </a>
+                    <a class="nav-link {{ request()->routeIs('stripe-manager.packages.*') ? 'active' : '' }}" href="{{ route('stripe-manager.packages.select') }}">
+                        <i class="fas fa-star me-2"></i>Select Package
+                    </a>
                 </nav>
             </div>
             

@@ -106,6 +106,15 @@ Route::group([
     // Stripe testing panel
     Route::get('testing/stripe', [CustomerController::class, 'stripeTest'])
         ->name('stripe-manager.testing.stripe');
+
+    // Package selection routes
+    Route::get('select-package', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'selectPackage'])
+        ->name('stripe-manager.packages.select');
+    Route::post('packages/subscribe', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'subscribe'])
+        ->name('stripe-manager.packages.subscribe');
+    Route::get('packages/success', function() {
+        return view('stripe-manager::packages.success');
+    })->name('stripe-manager.packages.success');
 });
 
 // API public only routes
