@@ -6,10 +6,24 @@ A comprehensive Laravel package for managing Stripe customers, products, subscri
 
 ### Installation
 
-1. **Install the package via Composer:**
+1. **Install the package via Composer in your Laravel project:**
+
+Navigate to your Laravel application directory:
+```bash
+cd /path/to/your/laravel-application
+```
+
+Then install the package:
 ```bash
 composer require emmanuelsaleem/laravel-stripe-manager
 ```
+
+For the latest development version:
+```bash
+composer require emmanuelsaleem/laravel-stripe-manager:dev-master --ignore-platform-reqs
+```
+
+> **Note:** After installation, if this is your first time using the package, you'll need to follow the remaining steps below.
 
 2. **Install required dependencies:**
 ```bash
@@ -57,6 +71,12 @@ class User extends Authenticatable
     use Billable, HasStripeId;
 }
 ```
+
+**Note:** The `HasStripeId` trait is **optional** but recommended. It provides helpful methods for checking if a user has a Stripe customer ID:
+- `hasStripeId()` - Check if user has a Stripe ID
+- `getStripeId()` - Get the user's Stripe ID
+
+If you prefer not to use the trait, the package will work by directly checking the `stripe_id` property on your User model. The package will automatically create a Stripe customer when needed.
 
 ## 🌐 Web Interface Access
 
@@ -386,6 +406,26 @@ git push origin feature/your-feature-name
 ## 📄 License
 
 This package is open-sourced software licensed under the [MIT license](LICENSE).
+
+## ❓ FAQ
+
+### Is the HasStripeId Trait Required?
+
+**No, the trait is optional.** The package works without it by checking the `stripe_id` property directly. However, adding the trait provides helpful methods:
+
+- **With trait:** The package checks `$user->hasStripeId()` 
+- **Without trait:** The package checks `empty($user->stripe_id)`
+
+Both approaches work identically. The trait is a convenience helper.
+
+### What if I don't have a stripe_id column?
+
+Run the migration provided with the package:
+```bash
+php artisan migrate
+```
+
+This will add the `stripe_id` column to your users table automatically.
 
 ## 🆘 Support
 
