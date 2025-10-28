@@ -53,6 +53,10 @@
                             <form action="{{ route('stripe-manager.packages.subscribe') }}" method="POST" class="mt-auto">
                                 @csrf
                                 <input type="hidden" name="pricing_id" value="{{ $pricing->id }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Coupon / Promo code (optional)</label>
+                                    <input type="text" name="coupon" class="form-control" placeholder="Enter coupon or promo code">
+                                </div>
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fas fa-check me-2"></i>Select This Package
                                 </button>

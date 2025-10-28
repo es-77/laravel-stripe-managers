@@ -127,6 +127,17 @@ class SubscriptionService
                 $subscriptionData['default_payment_method'] = $options['payment_method'];
             }
 
+            // Apply coupon or promotion code if provided
+            if (isset($options['coupon']) && is_string($options['coupon']) && $options['coupon'] !== '') {
+                // Accept either a Coupon ID (coupon) or Promotion Code ID (promotion_code)
+                // Prefer promotion_code when a promo code-like id (starts with 'promo_') is passed
+                if (str_starts_with($options['coupon'], 'promo_')) {
+                    $subscriptionData['promotion_code'] = $options['coupon'];
+                } else {
+                    $subscriptionData['coupon'] = $options['coupon'];
+                }
+            }
+
             // Add metadata
             if (isset($options['metadata'])) {
                 $subscriptionData['metadata'] = $options['metadata'];

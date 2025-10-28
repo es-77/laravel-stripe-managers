@@ -6,6 +6,7 @@ use EmmanuelSaleem\LaravelStripeManager\Controllers\ProductController;
 use EmmanuelSaleem\LaravelStripeManager\Controllers\CustomerController;
 use EmmanuelSaleem\LaravelStripeManager\Controllers\SubscriptionController;
 use EmmanuelSaleem\LaravelStripeManager\Controllers\WebhookController;
+use EmmanuelSaleem\LaravelStripeManager\Controllers\CouponController;
 
 $config = config('stripe-manager.routes');
 $apiConfig = config('stripe-manager.api_routes');
@@ -102,6 +103,10 @@ Route::group([
         ->name('stripe-manager.webhooks.test');
     Route::get('webhooks/logs', [WebhookController::class, 'logs'])
         ->name('stripe-manager.webhooks.logs');
+
+    // Coupons
+    Route::get('coupons/create', [CouponController::class, 'create'])->name('stripe-manager.coupons.create');
+    Route::post('coupons', [CouponController::class, 'store'])->name('stripe-manager.coupons.store');
 
     // Stripe testing panel
     Route::get('testing/stripe', [CustomerController::class, 'stripeTest'])

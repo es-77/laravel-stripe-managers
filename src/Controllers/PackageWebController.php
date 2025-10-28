@@ -28,7 +28,8 @@ class PackageWebController extends Controller
             $user = $userModel::findOrFail(auth()->id());
 
             $validated = $request->validate([
-                'pricing_id' => 'required|integer|exists:em_stripe_product_pricing,id'
+                'pricing_id' => 'required|integer|exists:em_stripe_product_pricing,id',
+                'coupon' => 'nullable|string|max:64'
             ]);
 
             $pricing = \EmmanuelSaleem\LaravelStripeManager\Models\StripeProductPricing::with('product')->findOrFail($validated['pricing_id']);
@@ -50,17 +51,24 @@ class PackageWebController extends Controller
             }
 
             $paymentMethodId = $request->input('payment_method_id');
+            $coupon = $request->input('coupon');
 
             $subscriptionService = app(\EmmanuelSaleem\LaravelStripeManager\Services\SubscriptionService::class);
 
-            $subscriptionService->createSubscription($user, $pricing, [
+            $options = [
                 'payment_method' => $paymentMethodId ?? 'pm_card_visa',
                 'metadata' => [
                     'user_id' => $user->id,
                     'user_name' => $user->name ?? 'User',
                     'user_email' => $user->email ?? '',
                 ]
-            ]);
+            ];
+
+            if (!empty($coupon)) {
+                $options['coupon'] = $coupon; // promotion code or coupon id
+            }
+
+            $subscriptionService->createSubscription($user, $pricing, $options);
 
             return redirect()->route('stripe-manager.packages.success')
                 ->with('success', 'You have successfully subscribed to ' . $pricing->product->name);
