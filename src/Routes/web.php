@@ -107,14 +107,6 @@ Route::group([
     Route::get('testing/stripe', [CustomerController::class, 'stripeTest'])
         ->name('stripe-manager.testing.stripe');
 
-    // Package selection routes
-    Route::get('select-package', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'selectPackage'])
-        ->name('stripe-manager.packages.select');
-    Route::post('packages/subscribe', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'subscribe'])
-        ->name('stripe-manager.packages.subscribe');
-    Route::get('packages/success', function() {
-        return view('stripe-manager::packages.success');
-    })->name('stripe-manager.packages.success');
 });
 
 // API public only routes
@@ -123,6 +115,19 @@ Route::group([
 ], function () {
     Route::get('plans', [\EmmanuelSaleem\LaravelStripeManager\Controllers\ApiController::class, 'plans'])
         ->name('stripe-manager.api.plans');
+});
+
+// Public web routes (no auth) for package selection/subscription
+Route::group([
+    'prefix' => $config['prefix'],
+], function () use ($config) {
+    Route::get('select-package', [\EmmanuelSaleem\LaravelStripeManager\Controllers\PackageWebController::class, 'selectPackage'])
+        ->name('stripe-manager.packages.select');
+    Route::post('packages/subscribe', [\EmmanuelSaleem\LaravelStripeManager\Controllers\PackageWebController::class, 'subscribe'])
+        ->name('stripe-manager.packages.subscribe');
+    Route::get('packages/success', function() {
+        return view('stripe-manager::packages.success');
+    })->name('stripe-manager.packages.success');
 });
 
 // API routes
