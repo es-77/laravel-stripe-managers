@@ -105,8 +105,15 @@ Route::group([
         ->name('stripe-manager.webhooks.logs');
 
     // Coupons
-    Route::get('coupons/create', [CouponController::class, 'create'])->name('stripe-manager.coupons.create');
-    Route::post('coupons', [CouponController::class, 'store'])->name('stripe-manager.coupons.store');
+    Route::resource('coupons', CouponController::class)->names([
+        'index' => 'stripe-manager.coupons.index',
+        'create' => 'stripe-manager.coupons.create',
+        'store' => 'stripe-manager.coupons.store',
+        'show' => 'stripe-manager.coupons.show',
+        'edit' => 'stripe-manager.coupons.edit',
+        'update' => 'stripe-manager.coupons.update',
+        'destroy' => 'stripe-manager.coupons.destroy',
+    ]);
 
     // Stripe testing panel
     Route::get('testing/stripe', [CustomerController::class, 'stripeTest'])
@@ -130,6 +137,8 @@ Route::group([
         ->name('stripe-manager.packages.select');
     Route::post('packages/subscribe', [\EmmanuelSaleem\LaravelStripeManager\Controllers\PackageWebController::class, 'subscribe'])
         ->name('stripe-manager.packages.subscribe');
+    Route::post('select-subscription-plan', [\EmmanuelSaleem\LaravelStripeManager\Controllers\PackageWebController::class, 'selectSubscriptionPlan'])
+        ->name('stripe-manager.api.select-subscription-plan');
     Route::get('packages/success', function() {
         return view('stripe-manager::packages.success');
     })->name('stripe-manager.packages.success');

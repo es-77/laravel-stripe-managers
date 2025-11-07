@@ -104,7 +104,7 @@
                     <a class="nav-link {{ request()->routeIs('stripe-manager.testing.stripe') ? 'active' : '' }}" href="{{ route('stripe-manager.testing.stripe') }}">
                         <i class="fas fa-flask me-2"></i>Stripe Testing
                     </a>
-                    <a class="nav-link {{ request()->routeIs('stripe-manager.coupons.*') ? 'active' : '' }}" href="{{ route('stripe-manager.coupons.create') }}">
+                    <a class="nav-link {{ request()->routeIs('stripe-manager.coupons.*') ? 'active' : '' }}" href="{{ route('stripe-manager.coupons.index') }}">
                         <i class="fas fa-ticket-alt me-2"></i>Coupons
                     </a>
                     <a class="nav-link {{ request()->routeIs('stripe-manager.packages.*') ? 'active' : '' }}" href="{{ route('stripe-manager.packages.select') }}">
